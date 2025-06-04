@@ -20,11 +20,14 @@ The framework has been evaluated with five commercial off-the-shelf (COTS) UE de
 - [Running Sni5Gect](#running-sni5gect)
 - [Exploit Modules](#exploit-modules)
     - [Sniffing: Dummy](#sniffing-dummy)
+        - [DCI Sniffing](#dci-sniffing)
     - [Crash: 5Ghoul Attacks](#crash5ghoulattacks)
     - [Downgrade: Registration Reject](#downgrade-registration-reject)
     - [Fingerprinting: Identity Request](#fingerprinting-identity-request)
     - [Downgrade: Authentication Replay](#downgrade-authentication-replay)
     - [Authentication Bypass: Registration Accept 5G AKA bypass](#authentication-bypass-5g-aka-bypass)
+- [Disclaimer](#disclaimer)
+
 
 ## Overview of Components
 Sni5Gect comprises several components, each responsible for handling different signals:
@@ -208,6 +211,27 @@ module = modules/lib_dummy.so
 Example output:
 ![Sniffing Example Output](./images/sniffing_example_output.png)
 
+#### DCI Sniffing
+To monitor decoded DCI (Downlink Control Information) messages in real time, set the following logging configuration:
+```conf
+worker_log_level = DEBUG
+```
+With this setting, the sniffer logs detailed DCI-related information, including:
+- DCI UL (Uplink Scheduling)
+- PUSCH decoding results
+- DCI DL (Downlink Scheduling)
+- PDSCH decoding results
+
+Example output: 
+
+```
+[D] [    0] DCI UL slot 6732 17503: c-rnti=0x4601 dci=0_0 ss=common0 L=2 cce=0 f_alloc=0x498 t_alloc=0x0 hop=n mcs=9 ndi=1 rv=0 harq_id=0 tpc=1 
+[D] [    0] PUSCH 6734 17507: c-rnti=0x4601 prb=(3,26) symb=(0,13) CW0: mod=QPSK tbs=528 R=0.670 rv=0 CRC=OK iter=1.0 evm=0.04 t_us=249 epre=+16.6 snr=+24.0 cfo=-2657.6 delay=-0.0 
+[I] 17921 [S:17507] <-- [P:NR RRC/NAS-5GS/NAS-5GS] RRC Setup Complete, Registration request, Registration request  [113-bytes] (Padding 405 bytes) 
+[D] [    0] DCI DL slot 6741 17520: c-rnti=0x4601 dci=1_1 ss=ue L=1 cce=4 f_alloc=0x14 t_alloc=0x0 mcs=20 ndi=0 rv=0 harq_id=0 dai=0 tpc=1 harq_feedback=3 ports=0 srs_request=0 dmrs_id=0 
+[D] [    0] PDSCH 6741 17520: c-rnti=0x4601 prb=(20,20) symb=(2,13) CW0: mod=64QAM tbs=54 R=0.593 rv=0 CRC=OK iter=1.0 evm=0.00 epre=+11.2 snr=+39.5 cfo=-0.7 delay=-0.0 
+[I] 17921 [S:17520] --> [P:NR RRC/NAS-5GS] DL Information Transfer, Identity request  [13-bytes]  (Padding 31 bytes) 
+```
 
 
 ### Crash: 5Ghoul Attacks
@@ -278,3 +302,7 @@ module = modules/lib_plaintext_registration_accept.so
 ```
 Example output:
 ![Registration_Accept](./images/registration_accpet.png)
+
+## Disclaimer
+This framework is for research and educational purposes only. Unauthorized use of Sni5Gect on live public networks or devices without consent may violate local laws and regulations.
+The authors and contributors are not responsible for any misuse.
