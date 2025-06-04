@@ -81,8 +81,6 @@ RUN cp /root/srsran/configs/gnb_rf_b200_tdd_n78_20mhz.yml /root/srsran/srsran.co
     sed -i 's/all_level: warning/all_level: debug/' /root/srsran/srsran.conf
 
 # Configurations required for artifacts
-RUN git clone https://github.com/P1sec/QCSuper /root/qcsuper && \
-    cd /root/qcsuper && pip3 install --upgrade pyserial pyusb crcmod https://github.com/P1sec/pycrate/archive/master.zip
 RUN apt install -y adb openssh-server wireshark tshark && \
     sed -i 's/^#Port 22/Port 65330/' /etc/ssh/sshd_config && \
     systemctl enable ssh && mkdir -p /root/.ssh && \
@@ -90,11 +88,11 @@ RUN apt install -y adb openssh-server wireshark tshark && \
 COPY credentials/authorized_keys /root/.ssh/authorized_keys
 RUN chmod 0600 /root/.ssh/authorized_keys
 COPY utils/dlt_user_config /root/.config/wireshark
-RUN mkdir /root/.local/lib/wireshark/plugins -p && \
-    wget -O /root/.local/lib/wireshark/plugins/diag_nr_rrc_dissector.lua https://raw.githubusercontent.com/P1sec/QCSuper/refs/heads/master/src/modules/wireshark_plugin/diag_nr_rrc_dissector.lua
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     bash Miniconda3-latest-Linux-x86_64.sh -p /root/.miniconda -b -u && \
     /root/.miniconda/bin/conda init bash && \
     rm Miniconda3-latest-Linux-x86_64.sh && \
-    . "/root/.miniconda/etc/profile.d/conda.sh" && \
-    pip install pandas libtmux loguru seaborn jupyter ipython ipykernel
+    . "/root/.miniconda/etc/profile.d/conda.sh" && conda activate base && \
+    pip install pandas libtmux loguru seaborn jupyter ipython ipykernel pyserial pyusb crcmod pycrate && \
+    git clone https://github.com/P1sec/QCSuper /root/qcsuper && \
+    cd /root/qcsuper && pip3 install --upgrade https://github.com/P1sec/pycrate/archive/master.zip
