@@ -1,0 +1,19 @@
+services:
+  artifacts:
+    image: artifacts
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: artifacts
+    privileged: true
+    restart: unless-stopped
+    entrypoint: /sbin/init
+    network_mode: host
+    volumes:
+      - "/dev/:/dev/"
+      - "/home/ubuntu/data/sni5gect-evaluation-results:/root/evaluation_results"
+    deploy:
+      resources:
+        reservations:
+          cpus: '2'
+          memory: 2G

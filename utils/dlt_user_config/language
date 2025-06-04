@@ -1,0 +1,6 @@
+# Language settings file for Wireshark 3.6.2.
+#
+# This file is regenerated each time Wireshark is quit.
+# So be careful, if you want to make manual changes here.
+
+language: system

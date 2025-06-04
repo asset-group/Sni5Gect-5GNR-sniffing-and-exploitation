@@ -7,7 +7,7 @@ cu_cp:
   amf:
     addr: 127.0.0.5
     port: 38412
-    bind_addr: 127.0.100.1
+    bind_addr: 127.0.0.1
     supported_tracking_areas:
       - tac: 1
         plmn_list:
@@ -31,15 +31,11 @@ cell_cfg:
   plmn: "00101"
   tac: 1
   pci: 1
-  prach:
-    prach_config_index: 1
 
 log:
   filename: /tmp/gnb.log
-  all_level: info
+  all_level: debug
 
 pcap:
   mac_enable: true
   mac_filename: /tmp/gnb_mac.pcap
-  ngap_enable: true
-  ngap_filename: /tmp/gnb_ngap.pcap

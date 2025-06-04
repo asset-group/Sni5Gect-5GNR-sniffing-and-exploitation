@@ -1,89 +1,276 @@
 Sni5Gect: A Practical Approach to Inject aNRchy into 5G NR
 ======
 
-Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff and inject messages into target User Equipment (UE) over-the-air at specific stages of 5G NR communication.
+Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messages and inject messages to target User Equipment (UE) over-the-air at specific states of 5G NR communication. This can be used to carry out attacks such as crashing the UE modem, downgrading to earlier generations of networks, fingerprinting, or authentication bypass.
 
 The framework has been evaluated with five commercial off-the-shelf (COTS) UE devices, including smartphones and USB modems. It has also been tested with [srsRAN](https://github.com/srsran/srsRAN_Project) and [Effnet](https://www.effnet.com/products/protocolstack-nw/) as legitimate 5G base stations.
 
-Below is an overview of the framework:
-
-![Illustration of the framework](./images/components_overview.svg "Overview of Sni5Gect")
-
-Different signals decoded by different components of the framework:
-![Signal and components](./images/signal_components_match.svg)
-
-This repository contains the implementation of Sni5Gect, which is modified from [srsRAN 4G](https://github.com/srsran/srsRAN_4G).
-
 ---
 ## Table of Contents
+- [Overview of Components](#overview-of-components)
+- [Project Structure](#project-structure)
+- [Features Supported](#features-supported)
 - [Requirements](#requirements)
-    - [Hardware](#hardware)
-    - [Software](#software)
-- [Setup](#setup)
-- [Configuration](#configuration)
+    - [Hardware Requirements](#hardware-requirements)
+    - [Software Requirements](#software-requirements)
+    - [Evaluated Devices](#evaluated-devices)
+- [Setup Instructions](#setup-instructions)
+- [Example Configuration](#example-configuration)
+- [Running Sni5Gect](#running-sni5gect)
+- [Exploit Modules](#exploit-modules)
+    - [Sniffing: Dummy](#sniffing-dummy)
+    - [Crash: 5Ghoul Malformed Messages](#crash-5ghoul-malformed-messages)
+    - [Downgrade: Registration Reject](#downgrade-registration-reject)
+    - [Fingerprinting: Identity Request](#fingerprinting-identity-request)
+    - [Downgrade: Authentication Replay](#downgrade-authentication-replay)
+    - [Authentication Bypass: Registration Accept 5G AKA bypass](#authentication-bypass-5g-aka-bypass)
+
+## Overview of Components
+Sni5Gect comprises several components, each responsible for handling different signals:
+- Syncher: Synchronizes time and frequency with the target base station.
+- Broadcast Worker: Decodes broadcast information such as SIB1 and detects and decodes RAR.
+- UETracker: Tracks the connection between the UE and the base station.
+- UE DL Worker: Decodes messages sent from the base station to the UE.
+- GNB UL Worker: Decodes messages sent from the UE to the base station.
+- GNB DL Injector: Encodes and sends messages to the UE.
+
+![Signal and components](./images/signal_components_match.svg)
+
+## Project Structure
+The project is organized as follows. The core Sni5Gect framework resides in the `shadower` directory. Key components are implemented in the following files:
+```
+.
+├── cmake
+├── configs
+├── credentials
+├── debian
+├── images
+├── lib
+├── shadower
+│   ├── hdr
+│   ├── modules
+│   ├── src
+│   │   ├── broadcast_worker.cc # Broadcast Worker implementation
+│   │   ├── gnb_dl_worker.cc    # GNB DL Injector implementation
+│   │   ├── gnb_ul_worker.cc    # GNB UL Worker implementation
+│   │   ├── scheduler.cc        # Distributes received subframes to components
+│   │   ├── syncer.cc           # Syncher implementation
+│   │   ├── ue_dl_worker.cc     # UE DL Worker implementation
+│   │   ├── ue_tracker.cc       # UE Tracker implementation
+│   │   └── wd_worker.cc        # wDissector wrapper
+│   ├── test
+│   └── tools
+├── srsenb
+├── srsepc
+├── srsgnb
+├── srsue
+├── test
+└── utils
+```
+## Features Supported
+We have tested with the following configurations:
+- Frequency Bands: n78, n41 (TDD)
+- Frequency: 3427.5 MHz
+- Subcarrier Spacing: 30 kHz
+- Bandwidth: 20–50 MHz
+- MIMO Configuration: Single-input single-output (SISO)
+- Distance: 0 meter to upto 20 meters (with amplifier)
+
+An example srsRAN base station configuration is available at `configs/srsran-n78.yml`.
 
 ## Requirements
-### Hardware
-The Sni5Gect framework uses a Software Defined Radio (SDR) device to send and receive IQ samples during communication between a legitimate 5G base station and a UE.
+### Hardware Requirements
+Sni5Gect utilizes a USRP Software Defined Radio (SDR) device to send and receive IQ samples during communication between a legitimate 5G base station and a UE. Supported SDRs:
+- USRP B210 SDR
+- USRP x310 SDR
 
-Tested configuration:
-- Frequency band: n78 (TDD)
-- Subcarrier spacing: 30 kHz
-- Bandwidth: 20 MHz
+Host Machine Recommendations:
+- Minimum: 12-core CPU
+- 16 GB RAM
 
-An example srsRAN base station configuration can be found in configs/srsran-n78.yml
+Our setup consists of AMD 5950x processor with 32 GB memory.
 
-For host machine, we recommend using machine with at least 8 cores, 16 GB memory, our setup consists of AMD 5950x processor with 32 GB memory.
+### Software Requirements
+- Operating System: Ubuntu 22.04 (containerized environment)
+- Note: The host should be dedicated to Sni5Gect without resource-intensive applications (e.g., GUI) to prevent SDR overflows.
 
-### Software
-Sni5Gect leverages [wDissector](https://github.com/asset-group/5ghoul-5g-nr-attacks) for analyzing over-the-air traffic and utilizes [Wireshark display filters](https://www.wireshark.org/docs/dfref/) to identify communication states.
+#### Sni5Gect leverages:
+- [wDissector](https://github.com/asset-group/5ghoul-5g-nr-attacks) for analyzing over-the-air traffic.
+- [Wireshark display filters](https://www.wireshark.org/docs/dfref/) to identify communication states.
 
-The framework builds upon [srsRAN 4G](https://github.com/srsran/srsRAN_4G) and uses its encoding and decoding features.
+Sni5Gect builds upon [srsRAN 4G](https://github.com/srsran/srsRAN_4G) utilizing features such as SSB search, PBCH decoding, PDCCH decoding, PDSCH encoding/decoding, and PUSCH decoding.
 
-We recommend running the whole stack in the Ubuntu 22.04 docker container on Debian host. 
+### Evaluated Devices
+The following COTS devices are evaluated.
+|Model|Modem|Patch Version|
+|-----|-----|-------------|
+|OnePlus Nord CE 2 IV2201|MediaTek MT6877V/ZA|2023-05-05|
+|Samsung Galaxy S22 SM-S901E/DS|Snapdragon X65|2024-06-01|
+|Google Pixel 7 |Exynos 5300|2023-05-05|
+|Huawei P40 Pro ELS-NX9|Balong 5000|2024-02-01|
+|Fibocom FM150-AE USB modem|Snapdragon X55|NA|
 
-## Setup
-1. Setup [wDissector](https://github.com/asset-group/5ghoul-5g-nr-attacks) by follow the [requirements.sh script](https://github.com/asset-group/5ghoul-5g-nr-attacks/blob/master/requirements.sh).
+## Setup Instructions
+We recommend running the entire stack within an Ubuntu 22.04 Docker container to ensure consistent dependencies and avoid affecting the local environment.
 
-2. Install UHD (for USRP SDRs)
+Build and Start the Docker Container:
 ```bash
-sudo apt install uhd-host libuhd-dev
-uhd_images_downloader
+docker compose build
+docker compose up -d
 ```
 
-3. Build instructions
-Run the following commands to build the project
+Access the Container:
 ```bash
-sudo apt install build-essential cmake libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev ninja-build
-cmake -B build -G Ninja
+docker exec -it artifacts bash
+```
+
+## Example Configuration
+An example configuration is provided in `configs/config-srsran-n78-20MHz.conf`
+```conf
+[cell]
+band = 78       # 5G Band number used
+nof_prb = 51    # Number of Physical Resource Blocks, obtained from srsRAN base station
+scs_common = 30 # Subcarrier Spacing for common (kHz)
+scs_ssb = 30    # Subcarrier Spacing for SSB (kHz)
+
+[rf]
+freq_offset = 0        # Frequency offset (Hz)
+tx_gain = 80           # Transmit gain (dB)
+rx_gain = 40           # Receive gain (dB)
+dl_arfcn = 628500      # Downlink ARFCN
+ssb_arfcn = 628128     # SSB ARFCN
+sample_rate = 23.04e6  # Sample rate (Hz)
+uplink_cfo_correction = -0.00054  # Uplink CFO (Hz) correction
+
+[recorder]
+enable_recorder = false # Enable recording the IQ samples to a file
+recorder_file = /tmp/output.fc32 # Recording output file
+
+[task]
+slots_to_delay = 5         # Number of slots to delay injecting the message
+max_flooding_epoch = 4     # Number of duplications to send in each inject
+tx_cfo_correction = 0      # Uplink CFO correction (Hz)
+send_advance_samples = 160 # Number of samples to send in advance
+n_ue_dl_worker = 4         # Number of UE downlink workers
+n_ue_ul_worker = 4         # Number of UE uplink workers
+n_gnb_dl_worker = 4        # Number of gNB downlink workers
+n_gnb_ul_worker = 4        # Number of gNB uplink workers
+pdsch_mcs = 3              # PDSCH MCS for injection
+pdsch_prbs = 24            # PDSCH PRBs for injection
+close_timeout = 5000       # Close timeout, after how long haven't received a message should stop tracking the UE (ms)
+
+
+[source]
+source_type = uhd # Source type: file, uhd
+source_module = build/shadower/libuhd_source.so
+source_params = type=b200,serial=3218CC4  # Device arguments for SDR source
+
+[log]
+log_level = INFO           # General log level
+syncer_log_level = INFO    # Syncer log level
+worker_log_level = INFO    # Worker log level
+bc_worker_log_level = INFO # Broadcast worker log level
+
+[pcap]
+pcap_folder = logs/ # Pcap folder
+
+[worker]
+pool_size = 20 # Worker pool size
+num_ues = 12   # Number of UETrackers to pre-initialize
+enable_gpu_acceleration = false
+
+
+[exploit]
+module = modules/lib_dummy.so # Note only one exploit module can be loaded each time
+```
+
+## Running Sni5Gect
+The Sni5Gect executable is located in the `build/shadower` directory and the configuration files are placed in the `configs` folder. To run the framework:
+```bash
+./build/shadower/shadower configs/config-srsran-n78-20MHz.conf
+```
+Upon startup, Sni5Gect will:
+
+1. Search for the base station using the specified center and SSB frequencies.
+2. Retrieve cell configuration from SIB1.
+3. Detect RAR messages indicating a new UE connecting to the target base station.
+![Example Output After Sni5Gect Successfully Started](./images/sni5gect-waiting-for-UE.png)
+
+## Exploit Modules
+The exploit modules are designed to provide a flexible way to load different attack or exploits. When receiving a message, it will first send to wDissector to analyze the packet and if the packet matches with any [Wireshark display filters](https://www.wireshark.org/docs/dfref/) specified, it will react according to the `post_dissection` specified, either inject messages to the communication or extract certain fields.
+
+### Sniffing: Dummy
+This module performs passive sniffing. The wDissector framework dissects packets and provides summaries of received packets.
+```conf
+module = modules/lib_dummy.so 
+```
+Example output:
+![Sniffing Example Output](./images/sniffing_example_output.png)
+
+### Downgrade: Registration Reject
+Utilizes the TC11 attack from the paper [Never Let Me Down Again: Bidding-Down Attacks and Mitigations in 5G and 4G](https://dl.acm.org/doi/10.1145/3558482.3581774).  Injects a `Registration Reject` message after receiving a `Registration Request` from the UE, causing it to disconnect from 5G and downgrade to 4G. While the base station may not aware of the disconnection, so it may keep sending the messages such as `Security Mode Command`, `Identity Request`, `Authentication Request`, etc.
+
+```conf
+module = modules/lib_dg_registration_reject.so 
+```
+Example Output:
+![Registration Reject Example output](./images/registration_reject_output.png)
+
+
+### Fingerprinting: Identity Request
+Demonstrates a fingerprinting attack by injecting an `Identity Request` message after receiving a `Registration Request`. If the UE accepts, it responds with an `Identity Response` containing its SUCI information.
+
+```conf
+module = modules/lib_identity_request.so 
+```
+Example output:
+![Identity Request Fingerprinting Example Output](./images/identity_request_output.png)
+
+### Downgrade: Authentication Replay
+This exploit is the most complex exploit we have, which involves two stages, sniffing and replaying. Then during the relaying stage, it requires sniffing and injecting at multiple different states.
+
+1. Sniffing: Capture a legitimate Authentication Request from the base station to the UE.
+```conf
+module = modules/lib_dg_authentication_request_sniffer.so 
+```
+
+2. Replaying: Update `shadower/modules/dg_authentication_replay.cc` with the captured MAC-NR values. Rebuild the module:
+```bash
 ninja -C build
 ```
 
-## Configuration
-To run the project you can use the following command:
-```bash
-./build/shadower/shadower configs/config_srsran.conf
+Then load the module:
+```conf
+module = modules/lib_dg_authentication_replay.so
 ```
 
-### Sniffing
-To perform sniffing:
-- Use the `modules/lib_dummy.so` module, which performs sniffing without initiating attacks.
-- Set `use_sdr` to `true` for real-time sniffing.
+Upon receiving `Registration Request` from the UE, Sni5Gect replays the captured `Authentication Request` message to the target UE. Upon receiving the replayed `Authentication Request` message, the UE replies with `Authentication Failure` message with cause `Synch Failure` and starts the timer T3520. Then Sni5Gect update its RLC and PDCP sequence number accordingly and replays the `Authentication Request` message for a few more times. Eventually, after multiple attempts and timer T3520 expires, the UE deems that the network has failed the authentication check. Then it locally release the communication and treats the active cell as barred. If no other 5G base station is available, the UE will downgrade to 4G and persists in downgrade status up to 300 seconds according to the specification 3GPP TS 24.501 version 16.5.1 Release 16 `5.4.1.2.4.5 Abnormal cases in the UE`. (some phone may stay in downgrade status for longer time).
 
-For offline analysis:
-- Set `use_sdr` to `false`
-- Update the `record_file` path to the location of recorded samples.
+In the example output, we can identify the UE replies the `Authentication Failure` message two times in the following screenshot.
+![Authentication Replay Attack Example output](./images/authentication_replay_output.png)
 
-### Recording
-To record samples during real-time sniffing, set `enable` to `true` in `recorder` section.
 
-### Attacks
-Use the pre-built modules in the `modules` directory or create custom modules in `shadower/modules`.
+### Crash: 5Ghoul Malformed Messages
+These exploits are taken from paper [5Ghoul: Unleashing Chaos on 5G Edge Devices](https://asset-group.github.io/disclosures/5ghoul/). Which affects the MTK modems of the OnePlus Nord CE2. 
+|CVE|Module|
+|---|------|
+|CVE-2023-20702|lib_mac_sch_rrc_setup_crash_var.so|
+|CVE-2023-32843|lib_mac_sch_mtk_rrc_setup_crash_3.so|
+|CVE-2023-32842|lib_mac_sch_mtk_rrc_setup_crash_4.so|
+|CVE-2024-20003|lib_mac_sch_mtk_rrc_setup_crash_6.so|
+|CVE-2023-32845|lib_mac_sch_mtk_rrc_setup_crash_7.so|
 
-The example exploit structure can be followed from `modules/lib_dummy.so`. 
+Upon receiving the `RRC Setup Request` message from the UE, Sni5Gect replies with malformed `RRC Setup` to the target UE. If the UE accepts such malformed `RRC Setup` message, it crashes immediately, this can be confirmed from the adb log containing keyword `sModemReason`, which indicates the MTK modem crashes. For example:
+```
+MDMKernelUeventObserver: sModemEvent: modem_failure
+MDMKernelUeventObserver: sModemReason:fid:1567346682;cause:[ASSERT] file:mcu/l1/nl1/internal/md97/src/rfd/nr_rfd_configdatabase.c line:4380 p1:0x00000001
+```
 
-## Repository Structure
-`configs/`: Configuration files for Sni5Gect.
-`modules/`: Pre-built modules for sniffing and injection.
-`shadower/`: Source code for the Sni5Gect framework, the source code for the modules are listed in `shadower/modules`.
-`build/`: Directory for compiled binaries and build artifacts.
+### Authentication Bypass: 5G AKA Bypass
+This exploit is utilizing $I_8$ 5G AKA Bypass from paper [Logic Gone Astray: A Security Analysis Framework for the Control Plane Protocols of 5G Basebands](https://www.usenix.org/conference/usenixsecurity24/presentation/tu). Only the Pixel 7 phone with Exynos modem is being affected.
+After receiving `Registation Request` from the UE, Sni5Gect injects the plaintext `Registration Accept` message with security header 4. The UE will ignore the wrong MAC and accept the `Registration Accpet` message, reply with `Registration Complete` and `PDU Session Establishment Requests`. Since the core network receives such unexpected messages, it instruct the gNB to release the connection by sending the `RRC Release` message to terminate the connection immediately.
+```conf
+module = modules/lib_plaintext_registration_accept.so
+```
+Example output:
+![Registration_Accept](./images/registration_accpet.png)
