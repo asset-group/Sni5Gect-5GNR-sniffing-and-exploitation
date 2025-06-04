@@ -4,7 +4,7 @@ Sni5Gect: A Practical Approach to Inject aNRchy into 5G NR
 Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messages and inject messages to target User Equipment (UE) over-the-air at specific states of 5G NR communication. This can be used to carry out attacks such as crashing the UE modem, downgrading to earlier generations of networks, fingerprinting, or authentication bypass.
 
 The framework has been evaluated with five commercial off-the-shelf (COTS) UE devices, including smartphones and USB modems. It has also been tested with [srsRAN](https://github.com/srsran/srsRAN_Project) and [Effnet](https://www.effnet.com/products/protocolstack-nw/) as legitimate 5G base stations.
-
+![Sni5Gect Overview](./images/sni5gect-overview.png)
 ---
 ## Table of Contents
 - [Overview of Components](#overview-of-components)
@@ -207,6 +207,25 @@ module = modules/lib_dummy.so
 Example output:
 ![Sniffing Example Output](./images/sniffing_example_output.png)
 
+
+
+### Crash: 5Ghoul Malformed Messages
+These exploits are taken from paper [5Ghoul: Unleashing Chaos on 5G Edge Devices](https://asset-group.github.io/disclosures/5ghoul/). Which affects the MTK modems of the OnePlus Nord CE2. 
+|CVE|Module|
+|---|------|
+|CVE-2023-20702|lib_mac_sch_rrc_setup_crash_var.so|
+|CVE-2023-32843|lib_mac_sch_mtk_rrc_setup_crash_3.so|
+|CVE-2023-32842|lib_mac_sch_mtk_rrc_setup_crash_4.so|
+|CVE-2024-20003|lib_mac_sch_mtk_rrc_setup_crash_6.so|
+|CVE-2023-32845|lib_mac_sch_mtk_rrc_setup_crash_7.so|
+
+Upon receiving the `RRC Setup Request` message from the UE, Sni5Gect replies with malformed `RRC Setup` to the target UE. If the UE accepts such malformed `RRC Setup` message, it crashes immediately, this can be confirmed from the adb log containing keyword `sModemReason`, which indicates the MTK modem crashes. For example:
+```
+MDMKernelUeventObserver: sModemEvent: modem_failure
+MDMKernelUeventObserver: sModemReason:fid:1567346682;cause:[ASSERT] file:mcu/l1/nl1/internal/md97/src/rfd/nr_rfd_configdatabase.c line:4380 p1:0x00000001
+```
+
+
 ### Downgrade: Registration Reject
 Utilizes the TC11 attack from the paper [Never Let Me Down Again: Bidding-Down Attacks and Mitigations in 5G and 4G](https://dl.acm.org/doi/10.1145/3558482.3581774).  Injects a `Registration Reject` message after receiving a `Registration Request` from the UE, causing it to disconnect from 5G and downgrade to 4G. While the base station may not aware of the disconnection, so it may keep sending the messages such as `Security Mode Command`, `Identity Request`, `Authentication Request`, etc.
 
@@ -249,22 +268,6 @@ Upon receiving `Registration Request` from the UE, Sni5Gect replays the captured
 In the example output, we can identify the UE replies the `Authentication Failure` message two times in the following screenshot.
 ![Authentication Replay Attack Example output](./images/authentication_replay_output.png)
 
-
-### Crash: 5Ghoul Malformed Messages
-These exploits are taken from paper [5Ghoul: Unleashing Chaos on 5G Edge Devices](https://asset-group.github.io/disclosures/5ghoul/). Which affects the MTK modems of the OnePlus Nord CE2. 
-|CVE|Module|
-|---|------|
-|CVE-2023-20702|lib_mac_sch_rrc_setup_crash_var.so|
-|CVE-2023-32843|lib_mac_sch_mtk_rrc_setup_crash_3.so|
-|CVE-2023-32842|lib_mac_sch_mtk_rrc_setup_crash_4.so|
-|CVE-2024-20003|lib_mac_sch_mtk_rrc_setup_crash_6.so|
-|CVE-2023-32845|lib_mac_sch_mtk_rrc_setup_crash_7.so|
-
-Upon receiving the `RRC Setup Request` message from the UE, Sni5Gect replies with malformed `RRC Setup` to the target UE. If the UE accepts such malformed `RRC Setup` message, it crashes immediately, this can be confirmed from the adb log containing keyword `sModemReason`, which indicates the MTK modem crashes. For example:
-```
-MDMKernelUeventObserver: sModemEvent: modem_failure
-MDMKernelUeventObserver: sModemReason:fid:1567346682;cause:[ASSERT] file:mcu/l1/nl1/internal/md97/src/rfd/nr_rfd_configdatabase.c line:4380 p1:0x00000001
-```
 
 ### Authentication Bypass: 5G AKA Bypass
 This exploit is utilizing $I_8$ 5G AKA Bypass from paper [Logic Gone Astray: A Security Analysis Framework for the Control Plane Protocols of 5G Basebands](https://www.usenix.org/conference/usenixsecurity24/presentation/tu). Only the Pixel 7 phone with Exynos modem is being affected.
