@@ -15,12 +15,12 @@ The framework has been evaluated with five commercial off-the-shelf (COTS) UE de
     - [Hardware Requirements](#hardware-requirements)
     - [Software Requirements](#software-requirements)
     - [Evaluated Devices](#evaluated-devices)
-- [Setup Instructions](#setup-instructions)
+- [Getting Started (Docker)](#getting-started-docker)
 - [Example Configuration](#example-configuration)
 - [Running Sni5Gect](#running-sni5gect)
 - [Exploit Modules](#exploit-modules)
     - [Sniffing: Dummy](#sniffing-dummy)
-    - [Crash: 5Ghoul Malformed Messages](#crash-5ghoul-malformed-messages)
+    - [Crash: 5Ghoul Attacks](#crash-5ghoul-attacks)
     - [Downgrade: Registration Reject](#downgrade-registration-reject)
     - [Fingerprinting: Identity Request](#fingerprinting-identity-request)
     - [Downgrade: Authentication Replay](#downgrade-authentication-replay)
@@ -111,7 +111,7 @@ The following COTS devices are evaluated.
 |Huawei P40 Pro ELS-NX9|Balong 5000|2024-02-01|
 |Fibocom FM150-AE USB modem|Snapdragon X55|NA|
 
-## Setup Instructions
+## Getting Started (Docker)
 We recommend running the entire stack within an Ubuntu 22.04 Docker container to ensure consistent dependencies and avoid affecting the local environment.
 
 Build and Start the Docker Container:
@@ -210,7 +210,7 @@ Example output:
 
 
 
-### Crash: 5Ghoul Malformed Messages
+### Crash: 5Ghoul Attacks
 These exploits are taken from paper [5Ghoul: Unleashing Chaos on 5G Edge Devices](https://asset-group.github.io/disclosures/5ghoul/). Which affects the MTK modems of the OnePlus Nord CE2. 
 |CVE|Module|
 |---|------|
