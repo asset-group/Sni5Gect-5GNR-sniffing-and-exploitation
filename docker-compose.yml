@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     entrypoint: /sbin/init
     network_mode: host
+    environment:
+      - DISPLAY=:99
     volumes:
       - "/dev/:/dev/"
       - "/home/ubuntu/data/sni5gect-evaluation-results:/root/evaluation_results"
@@ -17,3 +19,16 @@ services:
         reservations:
           cpus: '2'
           memory: 2G
+  mongodb:
+    image: mongo:8.0
+    container_name: mongodb
+    restart: unless-stopped
+    volumes:
+      - dbdata:/data/db
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

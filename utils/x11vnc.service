@@ -1,0 +1,9 @@
+[Unit]
+Description=x11vnc service
+After=multi-user.target
+[Service]
+Type=simple
+ExecStart=/usr/bin/x11vnc -display :99 -forever -passwd asdfasdf -rfbport 5900 -shared
+Restart=always
+[Install]
+WantedBy=multi-user.target

@@ -96,3 +96,12 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh &
     pip install pandas libtmux loguru seaborn jupyter ipython ipykernel pyserial pyusb crcmod pycrate && \
     git clone https://github.com/P1sec/QCSuper /root/qcsuper && \
     cd /root/qcsuper && pip3 install --upgrade https://github.com/P1sec/pycrate/archive/master.zip
+# Use X11VNC for remote access
+RUN apt install -y xvfb x11vnc fluxbox init
+COPY utils/xvfb.service /etc/systemd/system/xvfb.service
+COPY utils/x11vnc.service /etc/systemd/system/x11vnc.service
+COPY utils/fluxbox.service /etc/systemd/system/fluxbox.service
+RUN systemctl enable xvfb.service && \
+    systemctl enable fluxbox.service && \
+    systemctl enable x11vnc.service
+RUN git pull

@@ -1,0 +1,10 @@
+[Unit]
+Description=Fluxbox service
+After=multi-user.target
+[Service]
+Type=simple
+ExecStart=/usr/bin/fluxbox
+Environment="DISPLAY=:99"
+Restart=always
+[Install]
+WantedBy=multi-user.target
