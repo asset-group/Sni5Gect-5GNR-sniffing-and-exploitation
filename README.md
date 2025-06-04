@@ -4,6 +4,7 @@ Sni5Gect: A Practical Approach to Inject aNRchy into 5G NR
 Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messages and inject messages to target User Equipment (UE) over-the-air at specific states of 5G NR communication. This can be used to carry out attacks such as crashing the UE modem, downgrading to earlier generations of networks, fingerprinting, or authentication bypass.
 
 The framework has been evaluated with five commercial off-the-shelf (COTS) UE devices, including smartphones and USB modems. It has also been tested with [srsRAN](https://github.com/srsran/srsRAN_Project) and [Effnet](https://www.effnet.com/products/protocolstack-nw/) as legitimate 5G base stations.
+
 ![Sni5Gect Overview](./images/sni5gect-overview.png)
 ---
 ## Table of Contents
