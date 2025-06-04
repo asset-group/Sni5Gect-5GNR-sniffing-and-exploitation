@@ -20,7 +20,7 @@ The framework has been evaluated with five commercial off-the-shelf (COTS) UE de
 - [Running Sni5Gect](#running-sni5gect)
 - [Exploit Modules](#exploit-modules)
     - [Sniffing: Dummy](#sniffing-dummy)
-    - [Crash: 5Ghoul Attacks](#crash-5ghoul-attacks)
+    - [Crash: 5Ghoul Attacks](#crash5ghoulattacks)
     - [Downgrade: Registration Reject](#downgrade-registration-reject)
     - [Fingerprinting: Identity Request](#fingerprinting-identity-request)
     - [Downgrade: Authentication Replay](#downgrade-authentication-replay)
