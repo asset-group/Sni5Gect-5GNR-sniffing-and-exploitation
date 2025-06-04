@@ -169,7 +169,7 @@ source_params = type=b200,serial=3218CC4  # Device arguments for SDR source
 [log]
 log_level = INFO           # General log level
 syncer_log_level = INFO    # Syncer log level
-worker_log_level = INFO    # Worker log level
+worker_log_level = INFO    # Worker log level: Set to DEBUG to observe the DCI information
 bc_worker_log_level = INFO # Broadcast worker log level
 
 [pcap]
