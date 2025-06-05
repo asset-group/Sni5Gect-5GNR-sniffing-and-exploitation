@@ -30,7 +30,7 @@ The framework has been evaluated with five commercial off-the-shelf (COTS) UE de
 - [Citing Sni5Gect](#citing-sni5gect)
 
 ## Overview of Components
-Sni5Gect comprises several components, each responsible for handling different signals:
+Sni5Gect comprises of several components, each responsible for handling different signals:
 - Syncher: Synchronizes time and frequency with the target base station.
 - Broadcast Worker: Decodes broadcast information such as SIB1 and detects and decodes RAR.
 - UETracker: Tracks the connection between the UE and the base station.
@@ -83,8 +83,9 @@ We have tested with the following configurations:
 An example srsRAN base station configuration is available at `configs/srsran-n78.yml`.
 
 ## Requirements
+
 ### Hardware Requirements
-Sni5Gect utilizes a USRP Software Defined Radio (SDR) device to send and receive IQ samples during communication between a legitimate 5G base station and a UE. Supported SDRs:
+Sni5Gect utilizes a USRP Software Defined Radio (SDR) device to send and receive IQ samples during communication between a legitimate 5G base station and a UE. Following SDRs are supported:
 - USRP B210 SDR
 - USRP x310 SDR
 
@@ -98,14 +99,15 @@ Our setup consists of AMD 5950x processor with 32 GB memory.
 - Operating System: Ubuntu 22.04 (containerized environment)
 - Note: The host should be dedicated to Sni5Gect without resource-intensive applications (e.g., GUI) to prevent SDR overflows.
 
-#### Sni5Gect leverages:
+#### Sni5Gect leverages the following software components:
 - [wDissector](https://github.com/asset-group/5ghoul-5g-nr-attacks) for analyzing over-the-air traffic.
 - [Wireshark display filters](https://www.wireshark.org/docs/dfref/) to identify communication states.
 
 Sni5Gect builds upon [srsRAN 4G](https://github.com/srsran/srsRAN_4G) utilizing features such as SSB search, PBCH decoding, PDCCH decoding, PDSCH encoding/decoding, and PUSCH decoding.
 
 ### Evaluated Devices
-The following COTS devices are evaluated.
+The following COTS devices are evaluated:
+
 |Model|Modem|Patch Version|
 |-----|-----|-------------|
 |OnePlus Nord CE 2 IV2201|MediaTek MT6877V/ZA|2023-05-05|
@@ -189,11 +191,11 @@ module = modules/lib_dummy.so # Note only one exploit module can be loaded each 
 ```
 
 ## Running Sni5Gect
-The Sni5Gect executable is located in the `build/shadower` directory and the configuration files are placed in the `configs` folder. To run the framework:
+The Sni5Gect executable is located in the `build/shadower` directory and the configuration files are placed in the `configs` folder. Run the framework as follows:
 ```bash
 ./build/shadower/shadower configs/config-srsran-n78-20MHz.conf
 ```
-Upon startup, Sni5Gect will:
+Upon startup, Sni5Gect will do the following:
 
 1. Search for the base station using the specified center and SSB frequencies.
 2. Retrieve cell configuration from SIB1.
@@ -235,7 +237,7 @@ Example output:
 
 
 ### Crash: 5Ghoul Attacks
-These exploits are taken from paper [5Ghoul: Unleashing Chaos on 5G Edge Devices](https://asset-group.github.io/disclosures/5ghoul/). Which affects the MTK modems of the OnePlus Nord CE2. 
+These exploits are taken from paper [5Ghoul: Unleashing Chaos on 5G Edge Devices](https://asset-group.github.io/disclosures/5ghoul/). These affect the MTK modems of the OnePlus Nord CE2. 
 |CVE|Module|
 |---|------|
 |CVE-2023-20702|lib_mac_sch_rrc_setup_crash_var.so|
@@ -252,7 +254,7 @@ MDMKernelUeventObserver: sModemReason:fid:1567346682;cause:[ASSERT] file:mcu/l1/
 
 
 ### Downgrade: Registration Reject
-Utilizes the TC11 attack from the paper [Never Let Me Down Again: Bidding-Down Attacks and Mitigations in 5G and 4G](https://dl.acm.org/doi/10.1145/3558482.3581774).  Injects a `Registration Reject` message after receiving a `Registration Request` from the UE, causing it to disconnect from 5G and downgrade to 4G. While the base station may not aware of the disconnection, so it may keep sending the messages such as `Security Mode Command`, `Identity Request`, `Authentication Request`, etc.
+Utilizes the TC11 attack from the paper [Never Let Me Down Again: Bidding-Down Attacks and Mitigations in 5G and 4G](https://dl.acm.org/doi/10.1145/3558482.3581774).  Injects a `Registration Reject` message after receiving a `Registration Request` from the UE, causing it to disconnect from 5G and downgrade to 4G. Since the base station may not be aware of the disconnection, it may keep sending the messages such as `Security Mode Command`, `Identity Request`, `Authentication Request`, etc.
 
 ```conf
 module = modules/lib_dg_registration_reject.so 
@@ -288,7 +290,7 @@ Then load the module:
 module = modules/lib_dg_authentication_replay.so
 ```
 
-Upon receiving `Registration Request` from the UE, Sni5Gect replays the captured `Authentication Request` message to the target UE. Upon receiving the replayed `Authentication Request` message, the UE replies with `Authentication Failure` message with cause `Synch Failure` and starts the timer T3520. Then Sni5Gect update its RLC and PDCP sequence number accordingly and replays the `Authentication Request` message for a few more times. Eventually, after multiple attempts and timer T3520 expires, the UE deems that the network has failed the authentication check. Then it locally release the communication and treats the active cell as barred. If no other 5G base station is available, the UE will downgrade to 4G and persists in downgrade status up to 300 seconds according to the specification 3GPP TS 24.501 version 16.5.1 Release 16 `5.4.1.2.4.5 Abnormal cases in the UE`. (some phone may stay in downgrade status for longer time).
+Upon receiving `Registration Request` from the UE, Sni5Gect replays the captured `Authentication Request` message to the target UE. Upon receiving the replayed `Authentication Request` message, the UE replies with `Authentication Failure` message with cause `Synch Failure` and starts the timer T3520. Then Sni5Gect update its RLC and PDCP sequence number accordingly and replays the `Authentication Request` message for a few more times. Eventually, after multiple attempts and timer T3520 expires, the UE deems that the network has failed the authentication check. Then it locally releases the communication and treats the active cell as barred. If no other 5G base station is available, then the UE will downgrade to 4G and persists in downgrade status up to 300 seconds according to the specification 3GPP TS 24.501 version 16.5.1 Release 16 `5.4.1.2.4.5 Abnormal cases in the UE`. (Some phone may stay in downgrade status for much longer time).
 
 In the example output, we can identify the UE replies the `Authentication Failure` message two times in the following screenshot.
 ![Authentication Replay Attack Example output](./images/authentication_replay_output.png)
