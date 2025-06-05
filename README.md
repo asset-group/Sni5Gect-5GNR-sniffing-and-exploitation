@@ -27,7 +27,7 @@ The framework has been evaluated with five commercial off-the-shelf (COTS) UE de
     - [Downgrade: Authentication Replay](#downgrade-authentication-replay)
     - [Authentication Bypass: Registration Accept 5G AKA bypass](#authentication-bypass-5g-aka-bypass)
 - [Disclaimer](#disclaimer)
-
+- [Citing Sni5Gect](#citing-sni5gect)
 
 ## Overview of Components
 Sni5Gect comprises several components, each responsible for handling different signals:
@@ -271,7 +271,7 @@ Example output:
 ![Identity Request Fingerprinting Example Output](./images/identity_request_output.png)
 
 ### Downgrade: Authentication Replay
-This exploit is the most complex exploit we have, which involves two stages, sniffing and replaying. Then during the relaying stage, it requires sniffing and injecting at multiple different states.
+This exploit corresponds to `CVD-2024-0096`. It is the most complex exploit we have, which involves two stages, sniffing and replaying. Then during the relaying stage, it requires sniffing and injecting at multiple different states.
 
 1. Sniffing: Capture a legitimate Authentication Request from the base station to the UE.
 ```conf
@@ -306,3 +306,12 @@ Example output:
 ## Disclaimer
 This framework is for research and educational purposes only. Unauthorized use of Sni5Gect on live public networks or devices without consent may violate local laws and regulations.
 The authors and contributors are not responsible for any misuse.
+
+## Citing Sni5Gect
+```
+@inproceedings{
+  author={Shijie Luo and Garbelini Matheus E and Chattopadhyay Sudipta and Jianying Zhou},
+  booktitle={34th USENIX Security Symposium (USENIX Security 25)},
+  title={Sni5Gect: A Practical Approach to Inject aNRchy into 5G NR}, 
+  year={2025},
+}
