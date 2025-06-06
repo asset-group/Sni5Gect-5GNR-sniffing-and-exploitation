@@ -1,5 +1,4 @@
-Sni5Gect: A framework for 5G NR sniffing and exploitation
-
+# Sni5Gect: A framework for 5G NR sniffing and exploitation
 ======
 
 Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messages and inject messages to target User Equipment (UE) over-the-air at specific states of 5G NR communication. This can be used to carry out attacks such as crashing the UE modem, downgrading to earlier generations of networks, fingerprinting, or authentication bypass.
