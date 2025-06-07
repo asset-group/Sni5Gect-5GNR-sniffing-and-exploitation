@@ -74,7 +74,7 @@ The project is organized as follows. The core Sni5Gect framework resides in the 
 ## Features Supported
 We have tested with the following configurations:
 - Frequency Bands: n78, n41 (TDD)
-- Frequency: 3427.5 MHz
+- Frequency: 3427.5 MHz, 2550.15 MHz
 - Subcarrier Spacing: 30 kHz
 - Bandwidth: 20–50 MHz
 - MIMO Configuration: Single-input single-output (SISO)

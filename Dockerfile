@@ -54,7 +54,7 @@ RUN systemctl mask console-getty.service && \
 # Build sni5gect
 RUN apt install -y build-essential libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev libzmq3-dev libliquid-dev unzip openssh-client
 ARG GITHUB_TOKEN
-RUN git clone https://$GITHUB_TOKEN@github.com/roskeys/Sni5Gect-5GNR-sniffing-and-exploitation.git /root/sni5gect
+RUN git clone https://$GITHUB_TOKEN@github.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation.git /root/sni5gect
 WORKDIR /root/sni5gect
 RUN cmake -B build -G Ninja && ninja -C build
 # Build open5gs
