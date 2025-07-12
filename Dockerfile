@@ -54,7 +54,7 @@ RUN systemctl mask console-getty.service && \
 # Build sni5gect
 RUN apt install -y build-essential libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev libzmq3-dev libliquid-dev unzip openssh-client
 ARG GITHUB_TOKEN
-RUN git clone https://$GITHUB_TOKEN@github.com/roskeys/Sni5Gect-5GNR-sniffing-and-exploitation.git /root/sni5gect
+RUN git clone https://$GITHUB_TOKEN@github.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation.git /root/sni5gect
 WORKDIR /root/sni5gect
 RUN cmake -B build -G Ninja && ninja -C build
 # Build open5gs
@@ -68,7 +68,9 @@ RUN wget -qO- https://www.mongodb.org/static/pgp/server-8.0.asc | tee /etc/apt/t
 RUN git clone https://github.com/open5gs/open5gs /root/open5gs && cd /root/open5gs && meson build --prefix=`pwd`/install && ninja -C build && \
     cp build/configs/sample.yaml /root/open5gs/open5gs.yaml && \
     sed -i 's/mcc: 999/mcc: 001/g' /root/open5gs/open5gs.yaml && \
-    sed -i 's/mnc: 70/mnc: 01/g' /root/open5gs/open5gs.yaml
+    sed -i 's/mnc: 70/mnc: 01/g' /root/open5gs/open5gs.yaml && \
+    sed -i 's|logger:|logger:\n  file:\n    path: /root/sni5gect/logs/open5gs.log|g' /root/open5gs/open5gs.yaml
+
 # Build srsran
 RUN apt -y install gcc g++ pkg-config libfftw3-dev libmbedtls-dev libsctp-dev libyaml-cpp-dev libgtest-dev
 RUN git clone https://github.com/srsRAN/srsRAN_Project.git /root/srsran && cd /root/srsran && \
@@ -78,7 +80,9 @@ RUN cp /root/srsran/configs/gnb_rf_b200_tdd_n78_20mhz.yml /root/srsran/srsran.co
     sed -i 's/tac: 7/tac: 1/g' /root/srsran/srsran.conf && \
     sed -i 's/dl_arfcn: 632628/dl_arfcn: 628500/' /root/srsran/srsran.conf && \
     sed -i 's|filename: /tmp/gnb.log|filename: /root/sni5gect/logs/gnb.log|' /root/srsran/srsran.conf && \
-    sed -i 's/all_level: warning/all_level: debug/' /root/srsran/srsran.conf
+    sed -i 's/all_level: warning/all_level: debug/' /root/srsran/srsran.conf && \
+    sed -i 's/mac_enable: false/mac_enable: true/' /root/srsran/srsran.conf && \
+    sed -i 's|mac_filename: /tmp/gnb_mac.pcap|mac_filename: /root/sni5gect/logs/gnb_mac.pcap|' /root/srsran/srsran.conf
 
 # Configurations required for artifacts
 RUN apt install -y adb openssh-server wireshark tshark && \
@@ -95,7 +99,8 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh &
     . "/root/.miniconda/etc/profile.d/conda.sh" && conda activate base && \
     pip install pandas libtmux loguru seaborn jupyter ipython ipykernel pyserial pyusb crcmod pycrate && \
     git clone https://github.com/P1sec/QCSuper /root/qcsuper && \
-    cd /root/qcsuper && pip3 install --upgrade https://github.com/P1sec/pycrate/archive/master.zip
+    cd /root/qcsuper && pip3 install --upgrade https://github.com/P1sec/pycrate/archive/master.zip && \
+    apt install -y cutecom
 # Use X11VNC for remote access
 RUN apt install -y xvfb x11vnc fluxbox init
 COPY utils/xvfb.service /etc/systemd/system/xvfb.service
@@ -104,4 +109,4 @@ COPY utils/fluxbox.service /etc/systemd/system/fluxbox.service
 RUN systemctl enable xvfb.service && \
     systemctl enable fluxbox.service && \
     systemctl enable x11vnc.service
-RUN git pull
+RUN git pull && mkdir -p /root/sni5gect/logs

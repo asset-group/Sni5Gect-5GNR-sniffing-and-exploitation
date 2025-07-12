@@ -1,7 +1,7 @@
-Sni5Gect: A Practical Approach to Inject aNRchy into 5G NR
+# Sni5Gect: A framework for 5G NR sniffing and exploitation
 ======
 
-Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messages and inject messages to target User Equipment (UE) over-the-air at specific states of 5G NR communication. This can be used to carry out attacks such as crashing the UE modem, downgrading to earlier generations of networks, fingerprinting, or authentication bypass.
+Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messages send between the base station and the UE, and inject messages to target User Equipment (UE) over-the-air at specific states of 5G NR communication. This can be used to carry out attacks such as crashing the UE modem, downgrading to earlier generations of networks, fingerprinting, or authentication bypass.
 
 The framework has been evaluated with five commercial off-the-shelf (COTS) UE devices, including smartphones and USB modems. It has also been tested with [srsRAN](https://github.com/srsran/srsRAN_Project) and [Effnet](https://www.effnet.com/products/protocolstack-nw/) as legitimate 5G base stations.
 
@@ -74,7 +74,7 @@ The project is organized as follows. The core Sni5Gect framework resides in the 
 ## Features Supported
 We have tested with the following configurations:
 - Frequency Bands: n78, n41 (TDD)
-- Frequency: 3427.5 MHz
+- Frequency: 3427.5 MHz, 2550.15 MHz
 - Subcarrier Spacing: 30 kHz
 - Bandwidth: 20–50 MHz
 - MIMO Configuration: Single-input single-output (SISO)
@@ -191,7 +191,45 @@ module = modules/lib_dummy.so # Note only one exploit module can be loaded each 
 ```
 
 ## Running Sni5Gect
-The Sni5Gect executable is located in the `build/shadower` directory and the configuration files are placed in the `configs` folder. Run the framework as follows:
+The Sni5Gect executable is located in the `build/shadower` directory, and configuration files are available in the `configs` folder.
+
+### Running with Example Connection Recording
+The easiest way to get started with Sni5Gect is to run it using a pre-recorded IQ sample file. We've provided a sample for offline testing.
+
+1. Download and Extract the example recording file from Zenodo:
+```bash
+wget https://zenodo.org/records/15601773/files/example-connection-samsung-srsran.zip
+unzip example-connection-samsung-srsran.zip
+```
+2. Edit `configs/config-srsran-n78-20MHz.conf` and modify the `[source]` section as follows:
+
+```bash
+[source]
+source_type = file
+source_module = build/shadower/libfile_source.so
+# Replace with the absolute path to the extracted IQ sample file if needed
+source_params = /root/sni5gect/example_connection/example.fc32  
+```
+
+3. Finally launch the sniffer using:
+```bash
+./build/shadower/shadower configs/config-srsran-n78-20MHz.conf
+```
+You should see output similar to the screenshot below:
+![Example recording](./images/example_recording.png)
+
+### Running with an SDR (Live Sniffing)
+To test Sni5Gect with a live over-the-air signal using a Software Defined Radio (SDR), update the configuration file to use the SDR as the source.
+
+Example `[source]` Section for UHD-compatible SDR (e.g., USRP B200)
+```bash
+[source]
+source_type = uhd
+source_module = build/shadower/libuhd_source.so
+source_params = type=b200
+```
+
+Then start the sniffer with:
 ```bash
 ./build/shadower/shadower configs/config-srsran-n78-20MHz.conf
 ```
