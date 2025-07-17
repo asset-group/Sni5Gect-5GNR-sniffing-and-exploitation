@@ -1,0 +1,2 @@
+This framework is for research and educational purposes only. Unauthorized use of Sni5Gect on live public networks or devices without consent may violate local laws and regulations.
+The authors and contributors are not responsible for any misuse.
