@@ -6,6 +6,16 @@ Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messa
 The framework has been evaluated with five commercial off-the-shelf (COTS) UE devices, including smartphones and USB modems. It has also been tested with [srsRAN](https://github.com/srsran/srsRAN_Project) and [Effnet](https://www.effnet.com/products/protocolstack-nw/) as legitimate 5G base stations.
 
 ![Sni5Gect Overview](./images/sni5gect-overview.png)
+
+Sni5Gect artifacts paper received the following badges in the 34th USENIX Security Symposium:
+
+<div style="text-align: center;">
+  <img src="images\usenixbadges-available.png" alt="Available" style="width: 150px; height: auto; margin: 0 5px;" />
+  <img src="images\usenixbadges-functional.png" alt="Functional" style="width: 150px; height: auto; margin: 0 5px;" />
+  <img src="images\usenixbadges-reproduced.png" alt="Reproduced" style="width: 150px; height: auto; margin: 0 5px;" />
+</div>
+
+
 ---
 ## Table of Contents
 - [Overview of Components](#overview-of-components)
