@@ -1,4 +1,4 @@
-<!-- <img src="_media/Sni5Gect.png" style="width:10%;"> -->
+<img src="_media/Sni5Gect.png" style="width:10%;">
 
 # Sni5Gect
 
