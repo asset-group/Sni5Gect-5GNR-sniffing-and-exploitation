@@ -1,7 +1,7 @@
 # Configurations
 
 An example configuration for srsRAN is provided in `configs/config-srsran-n78-20MHz.conf`.
-For a new cell, the user have to firstly specify the band number. Sni5Gect need the user to specify the center frequency and SSB frequency instead of searching these frequencies by itself. These informations can be obtained using tools such as Cellular PRO. The frequency can be convert to arfcn using this website [5G Tools](https://5g-tools.com/5g-nr-arfcn-calculator/). Then based on the bandwidth the `nof_prb` have to be changed, this can normally be obtained from SIB1 either using `qcsuper` or Cellular Pro.
+For a new cell, the user has to firstly specify the band number. Sni5Gect needs the user to specify the center frequency and SSB frequency instead of searching these frequencies by itself. These informations can be obtained using tools such as Cellular PRO. The frequency can be converted to arfcn using this website [5G Tools](https://5g-tools.com/5g-nr-arfcn-calculator/). Then, based on the bandwidth, the `nof_prb` have to be changed, this can normally be obtained from SIB1 either using `qcsuper` or Cellular Pro.
 
 ## Example Configuration
 ```ini
@@ -63,7 +63,7 @@ module = modules/lib_dummy.so # Note only one exploit module can be loaded each 
 ```
 
 ## Special configurations
-The following two configurations may change due to the hardware difference. You may follow the instructions below to find the correct values.
+The following two configurations may change due to the hardware differences. You may follow the instructions below to find the correct values.
 
 The parameter `uplink_cfo_correction` is found by bruteforce search using the code in `shadower\test\pusch_cfo_test.cc` to identify the best value that can decode the most number of uplink messages. 
 
