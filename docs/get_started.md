@@ -33,7 +33,6 @@ docker exec -it sni5gect bash
 ```
 
 ### Use file recording
-Running with Example Connection Recording
 The easiest way to get started with Sni5Gect is to run it using a pre-recorded IQ sample file. We have provided a sample for offline testing.
 
 Download and Extract the example recording file from Zenodo:

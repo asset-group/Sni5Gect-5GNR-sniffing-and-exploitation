@@ -7,7 +7,7 @@ The framework has been evaluated with five commercial off-the-shelf (COTS) UE de
 
 ![Sni5Gect Overview](./images/sni5gect-overview.png)
 
-Sni5Gect artifacts paper received the following badges in the 34th USENIX Security Symposium:
+Sni5Gect artifacts paper received the following badges in the 34th USENIX Security Symposium. Artifacts pdf available at [docs/_media](https://github.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/blob/77e996b3b2aca6cc3f3fb6ccf3812f19a6490564/docs/_media/USENIX_Security__25_Artifact_Appendix__SNI5GECT__A_Practical_Approach_to_Inject_aNRchy_into_5G_NR.pdf).
 
 <div style="text-align: center;">
   <img src="images\usenixbadges-available.png" alt="Available" style="width: 150px; height: auto; margin: 0 5px;" />
