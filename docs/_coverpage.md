@@ -10,6 +10,6 @@
 
 [GitHub](https://github.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation)
 [Get Started](#sni5gect)
-[Paper](_media/SNI5GECT__A_Practical_Approach_to_Inject_aNRchy_into_5G_NR.pdf)
-[Artifacts](_media/USENIX_Security__25_Artifact_Appendix__SNI5GECT__A_Practical_Approach_to_Inject_aNRchy_into_5G_NR.pdf)
+[Paper](https://www.usenix.org/conference/usenixsecurity25/presentation/luo-shijie)
+[Artifacts](https://doi.org/10.5281/zenodo.16712370)
 [Cite](/cite)
