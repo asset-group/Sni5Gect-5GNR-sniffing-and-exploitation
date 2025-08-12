@@ -5,4 +5,5 @@ Utilizes the $TC_{11}$ attack from the paper [Never Let Me Down Again: Bidding-D
 module = modules/lib_dg_registration_reject.so 
 ```
 Example Output:
+
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images/registration_reject_output.png"/>

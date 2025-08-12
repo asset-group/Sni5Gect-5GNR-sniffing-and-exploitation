@@ -84,4 +84,4 @@ Upon startup, Sni5Gect will do the following:
 2. Retrieve cell configuration from SIB1.
 3. Detect RAR messages indicating a new UE connecting to the target base station.
 
-<img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images/sni5gect-waiting-for-UE.png?token=GHSAT0AAAAAADF5L7NCLHQRUCRBMW5ZVXYQ2DXS7KQ"/>
+<img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images/sni5gect-waiting-for-UE.png"/>
