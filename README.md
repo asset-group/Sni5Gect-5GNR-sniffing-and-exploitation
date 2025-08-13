@@ -12,13 +12,19 @@
     width="100" align="right" />
 </a>
 
-# Sni5Gect - Framework for 5G NR Sniffing and Exploitation
+# Sni5Gect - 5G NR Sniffing and Exploitation
 
-Sni5Gect (Sniffing 5G Inject) is a framework designed to sniff unencrypted messages send between the base station and the UE, and inject messages to target User Equipment (UE) over-the-air at specific states of 5G NR communication. This can be used to carry out attacks such as crashing the UE modem, downgrading to earlier generations of networks, fingerprinting, or authentication bypass.
+Sni5Gect is a framework for sniffing unencrypted 5G messages and injecting custom packets into the over-the-air communication between a base station and a User Equipment (UE). It can be used for security research to perform attacks like crashing UE modems, network downgrades, fingerprinting, and auth bypass. The tool has been tested with commercial UEs (smartphones, modems) and srsRAN/Effnet base stations.
 
-The framework has been evaluated with five commercial off-the-shelf (COTS) UE devices, including smartphones and USB modems. It has also been tested with [srsRAN](https://github.com/srsran/srsRAN_Project) and [Effnet](https://www.effnet.com/products/protocolstack-nw/) as legitimate 5G base stations.
+#### Core Features
+* 🔎 Sniff: Capture 5G MAC-NR unencrypted messages between the base station and UE.
+* 💉 Inject: Send arbitrary MAC-NR messages to a target UE at specific communication states.
+#### Example Use Cases
+* 💥 Crash UE modems.
+* 📉 Downgrade attacks (5G to 4G).
+* 👆 Device Fingerprinting.
 
-*Sni5Gect artifacts paper received the badges **Available**, **Functional** and **Reproduced** in the 34th USENIX Security Symposium. Artifacts pdf available at [here](https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/docs/_media/USENIX_Security__25_Artifact_Appendix__SNI5GECT__A_Practical_Approach_to_Inject_aNRchy_into_5G_NR.pdf)*
+*Sni5Gect artifacts paper received badges **Available**, **Functional** and **Reproduced** in the 34th USENIX Security Symposium. Artifacts pdf available at [here](https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/docs/_media/USENIX_Security__25_Artifact_Appendix__SNI5GECT__A_Practical_Approach_to_Inject_aNRchy_into_5G_NR.pdf)*
 
 ## Overview
 
