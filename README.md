@@ -6,14 +6,8 @@
 <a href="https://nicegui.io/#about">
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images\usenixbadges-reproduced.png"
     width="100" align="right" />
-</a>
-
-<a href="https://nicegui.io/#about">
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images\usenixbadges-functional.png"
     width="100" align="right" />
-</a>
-
-<a href="https://nicegui.io/#about">
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images\usenixbadges-available.png"
     width="100" align="right" />
 </a>
