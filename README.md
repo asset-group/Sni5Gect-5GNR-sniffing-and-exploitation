@@ -1,18 +1,18 @@
-<a href="https://nicegui.io/#about">
+<a href="http://sni5gect.com/">
   <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/docs/_media/Sni5Gect.png"
-    width="230" align="left" />
+    width="115" align="left" />
 </a>
 
-<a href="https://nicegui.io/#about">
+<a href="http://sni5gect.com/">
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images\usenixbadges-reproduced.png"
-    width="100" align="right" />
+    width="110" align="right" />
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images\usenixbadges-functional.png"
-    width="100" align="right" />
+    width="110" align="right" />
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images\usenixbadges-available.png"
-    width="100" align="right" />
+    width="110" align="right" />
 </a>
 
-# Sni5Gect - 5G NR Sniffing and Exploitation
+# Sni5Gect - 5G NR Sniffing and Exploitation Framework
 
 Sni5Gect is a framework for sniffing unencrypted 5G messages and injecting custom packets into the over-the-air communication between a base station and a User Equipment (UE). It can be used for security research to perform attacks like crashing UE modems, network downgrades, fingerprinting, and auth bypass. The tool has been tested with commercial UEs (smartphones, modems) and srsRAN/Effnet base stations.
 
