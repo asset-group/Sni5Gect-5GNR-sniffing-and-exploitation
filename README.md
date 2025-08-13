@@ -1,6 +1,6 @@
 <a href="https://nicegui.io/#about">
   <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/docs/_media/Sni5Gect.png"
-    width="230" align="left" style="padding-right: 20px;" />
+    width="230" align="left" />
 </a>
 
 <a href="https://nicegui.io/#about">
@@ -15,7 +15,7 @@
 
 <a href="https://nicegui.io/#about">
 <img src="https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/images\usenixbadges-available.png"
-    width="100" align="right" style="padding-left: 2px; padding-bottom: 10px;" />
+    width="100" align="right" />
 </a>
 
 # Sni5Gect - Framework for 5G NR Sniffing and Exploitation
