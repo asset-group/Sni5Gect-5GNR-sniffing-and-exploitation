@@ -14,7 +14,7 @@
 
 # Sni5Gect - 5G NR Sniffing and Exploitation Framework
 
-Sni5Gect is a framework for sniffing unencrypted 5G messages and injecting custom packets into the over-the-air communication between a base station and a User Equipment (UE). It can be used for security research to perform attacks like crashing UE modems, network downgrades, fingerprinting, and auth bypass. The tool has been tested with commercial UEs (smartphones, modems) and srsRAN/Effnet base stations.
+**Sni5Gect** is a framework for sniffing unencrypted 5G messages and injecting custom packets into the over-the-air communication between a base station and a User Equipment (UE). It can be used for security research to perform attacks like crashing UE modems, network downgrades, fingerprinting, and auth bypass. The tool has been tested with commercial UEs (smartphones, modems) and srsRAN/Effnet base stations.
 
 #### Core Features
 * 🔎 Sniff: Capture 5G MAC-NR unencrypted messages between the base station and UE.
@@ -23,6 +23,7 @@ Sni5Gect is a framework for sniffing unencrypted 5G messages and injecting custo
 * 💥 Crash UE modems.
 * 📉 Downgrade attacks (5G to 4G).
 * 👆 Device Fingerprinting.
+* 👹 Anomaly Detection.
 
 *Sni5Gect artifacts paper received badges **Available**, **Functional** and **Reproduced** in the 34th USENIX Security Symposium. Artifacts pdf available at [here](https://raw.githubusercontent.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation/main/docs/_media/USENIX_Security__25_Artifact_Appendix__SNI5GECT__A_Practical_Approach_to_Inject_aNRchy_into_5G_NR.pdf)*
 
