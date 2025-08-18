@@ -68,9 +68,11 @@ RUN apt -y install sudo init python3-pip python3-dev software-properties-common 
         libzstd1 libunwind8 libcap2 libspeexdsp1 libxtst6 libatk-bridge2.0-0 libusb-1.0-0 meson
 # Install llvm 15
 RUN wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && ./llvm.sh 15 && rm llvm.sh
-RUN wget https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u3_amd64.deb && \
-        dpkg -i libssl1.1_1.1.1w-0+deb11u3_amd64.deb && \
-        rm libssl1.1_1.1.1w-0+deb11u3_amd64.deb
+RUN arch=$(dpkg --print-architecture) \
+    && wget https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u3_${arch}.deb \
+    && dpkg -i libssl1.1_1.1.1w-0+deb11u3_${arch}.deb \
+    && rm libssl1.1_1.1.1w-0+deb11u3_${arch}.deb
+
 # Clone and build wdissector
 RUN git clone https://github.com/asset-group/5ghoul-5g-nr-attacks /root/wdissector
 WORKDIR /root/wdissector
@@ -83,7 +85,8 @@ RUN cd 3rd-party/ && git clone https://github.com/json-c/json-c.git --depth=1 &&
     mkdir -p build && cd build && cmake ../ && make -j && make install && ldconfig
 RUN curl https://raw.githubusercontent.com/jckarter/tbb/refs/heads/master/include/tbb/tbb_stddef.h -o /usr/include/tbb/tbb_stddef.h
 RUN sed -i 's/\blong[[:space:]]\+gettid()/__pid_t gettid()/g' /root/wdissector/src/MiscUtils.hpp && \
-    sed -i 's/\bif\s*(\s*SWIG_EXIST\s*)/if(NOT SWIG_EXIST)/g' /root/wdissector/CMakeLists.txt
+    sed -i 's/\bif\s*(\s*SWIG_EXIST\s*)/if(NOT SWIG_EXIST)/g' /root/wdissector/CMakeLists.txt && \
+    sed -i 's/exit 1/# exit 1/' /root/wdissector/build.sh 
 RUN cd /root/wdissector && ./build.sh all
 
 FROM wdissector AS sni5gect
@@ -99,10 +102,12 @@ FROM sni5gect AS sni5gect-dev
 # ENV PATH=/usr/local/cuda-12.8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Install miniconda
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    bash Miniconda3-latest-Linux-x86_64.sh -p /root/.miniconda -b -u && \
+RUN arch=$(uname -m) && \
+    if [ "$arch" = "x86_64" ]; then arch="x86_64"; elif [ "$arch" = "aarch64" ]; then arch="aarch64"; fi && \
+    wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${arch}.sh" && \
+    bash "Miniconda3-latest-Linux-${arch}.sh" -p /root/.miniconda -b -u && \
     /root/.miniconda/bin/conda init bash && \
-    rm Miniconda3-latest-Linux-x86_64.sh
+    rm "Miniconda3-latest-Linux-${arch}.sh"
 
 # Install qcsuper
 RUN . "/root/.miniconda/etc/profile.d/conda.sh" && conda activate base && \

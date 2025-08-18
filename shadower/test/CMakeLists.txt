@@ -107,8 +107,10 @@ if (USE_CUDA)
     target_link_libraries(fft_test ${SRSUE_SOURCES} ${SRSRAN_SOURCES} ${FFT_LIBRARIES} fft_processor)
 endif(USE_CUDA)
 
-add_executable(ldpc_test ldpc_test.cc)
-target_link_libraries(ldpc_test PRIVATE ${SRSUE_SOURCES} ${SRSRAN_SOURCES} srsran_phch srsran_fec)
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+  add_executable(ldpc_test ldpc_test.cc)
+  target_link_libraries(ldpc_test PRIVATE ${SRSUE_SOURCES} ${SRSRAN_SOURCES} srsran_phch srsran_fec)
+endif()
 
 add_executable(pcap_writer pcap_writer.cc)
 target_link_libraries(pcap_writer ${SRSUE_SOURCES} ${SRSRAN_SOURCES})
