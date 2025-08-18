@@ -1,24 +1,51 @@
 services:
-  artifacts:
-    image: artifacts
+  sni5gect:
+    image: sni5gect
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: artifacts
+    container_name: sni5gect
     privileged: true
     restart: unless-stopped
     entrypoint: /sbin/init
     network_mode: host
-    environment:
-      - DISPLAY=:99
     volumes:
       - "/dev/:/dev/"
-      - "/home/ubuntu/data/sni5gect-evaluation-results:/root/evaluation_results"
     deploy:
       resources:
         reservations:
-          cpus: '2'
-          memory: 2G
+          cpus: '1'
+          memory: 1G
+
+  srsran:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: srsran5g
+    image: srsran
+    container_name: srsran
+    restart: unless-stopped
+    privileged: true
+    command: sleep infinity
+    volumes:
+      - "/dev/bus/usb/:/dev/bus/usb/"
+    network_mode: host
+
+  open5gs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: open5gs
+    image: open5gs
+    container_name: open5gs
+    restart: unless-stopped
+    privileged: true
+    command: sleep infinity
+    network_mode: host
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
   mongodb:
     image: mongo:8.0
     container_name: mongodb
