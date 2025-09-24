@@ -90,6 +90,9 @@ target_link_libraries(pusch_cfo_search utils)
 add_executable(pdsch_encode_test pdsch_encode_test.cc)
 target_link_libraries(pdsch_encode_test wd_worker utils)
 
+add_executable(pusch_encode_test pusch_encode_test.cc)
+target_link_libraries(pusch_encode_test wd_worker utils)
+
 add_executable(dci_ul_encode_test dci_ul_encode_test.cc)
 target_link_libraries(dci_ul_encode_test wd_worker utils)
 

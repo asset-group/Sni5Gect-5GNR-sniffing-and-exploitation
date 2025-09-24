@@ -13,6 +13,7 @@ extern "C" {
 #include "shadower/utils/phy_cfg_utils.h"
 #include "shadower/utils/ssb_utils.h"
 #include "shadower/utils/ue_dl_utils.h"
+#include "shadower/utils/ue_ul_utils.h"
 #include "srsran/srslog/srslog.h"
 #include <inttypes.h>
 #include <string>
