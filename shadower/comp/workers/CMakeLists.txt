@@ -97,3 +97,9 @@ add_test(shd_gnb_dl_worker_test_20MHz
     -M 3 -P 24
 )
 set_tests_properties(shd_gnb_dl_worker_test_20MHz PROPERTIES WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+
+add_library(ue_ul_worker ue_ul_worker.cc)
+target_link_libraries(ue_ul_worker utils)
+
+add_executable(ue_ul_worker_test tests/ue_ul_worker_test.cc)
+target_link_libraries(ue_ul_worker_test ue_ul_worker utils source)

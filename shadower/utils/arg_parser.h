@@ -72,6 +72,8 @@ struct ShadowerConfig {
   int32_t  tx_advancement;    // Number of samples to send in advance, so that on the receiver side, it arrives at the
   uint32_t pdsch_mcs;         // PDSCH MCS used for injection
   uint32_t pdsch_prbs;        // PDSCH PRBs used for injection
+  uint32_t ul_advancement;
+  uint32_t ul_channel;
 
   // Source configurations
   std::string source_type;   // Source type: file, uhd, limeSDR
