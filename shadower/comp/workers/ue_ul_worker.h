@@ -4,21 +4,32 @@
 #include "shadower/utils/constants.h"
 #include "shadower/utils/utils.h"
 #include "srsran/common/phy_cfg_nr.h"
-#include "srsran/common/thread_pool.h"
+#include "srsran/common/threads.h"
 #include "srsran/srslog/logger.h"
 #include <semaphore>
 
-class UEULWorker : public srsran::thread_pool::worker
+class UEULWorker : public srsran::thread
 {
 public:
   UEULWorker(srslog::basic_logger& logger_, ShadowerConfig& config_, Source* source_, srsue::nr::state& phy_state_);
   ~UEULWorker() override;
+
+  struct ue_ul_task_t {
+    uint32_t                               rnti;
+    srsran_rnti_type_t                     rnti_type;
+    uint32_t                               rx_slot_idx;
+    srsran_timestamp_t                     rx_timestamp;
+    std::shared_ptr<std::vector<uint8_t> > msg;
+  };
 
   /* Initialize the UE UL worker  */
   bool init(srsran::phy_cfg_nr_t& phy_cfg_);
 
   /* Update the UE UL configurations */
   bool update_cfg(srsran::phy_cfg_nr_t& phy_cfg_);
+
+  /* Set the context of the UE UL worker */
+  void set_context(std::shared_ptr<ue_ul_task_t> task_);
 
   /* Set PUSCH grant */
   int set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg);
@@ -32,7 +43,7 @@ public:
   cf_t* buffer = nullptr;
 
 private:
-  void work_imp() override;
+  void run_thread() override;
 
   srslog::basic_logger&   logger;
   Source*                 source;
@@ -54,4 +65,8 @@ private:
   uint32_t nof_sc        = 0;
   uint32_t nof_re        = 0;
   double   slot_duration = SF_DURATION;
+
+  srsran_slot_cfg_t             target_slot  = {};
+  srsran_dci_ul_nr_t            target_dci   = {};
+  std::shared_ptr<ue_ul_task_t> current_task = nullptr;
 };

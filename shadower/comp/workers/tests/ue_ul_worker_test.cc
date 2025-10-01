@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
   UEULWorker* ue_ul_worker = new UEULWorker(logger, config, source, phy_state);
   ue_ul_worker->init(phy_cfg);
   ue_ul_worker->update_cfg(phy_cfg);
-  uint32_t k = ue_ul_worker->set_pusch_grant(dci_ul[0], dci_slot_cfg);
+  int target_slot_idx = ue_ul_worker->set_pusch_grant(dci_ul[0], dci_slot_cfg);
 
   std::shared_ptr<std::vector<uint8_t> > pusch_payload = std::make_shared<std::vector<uint8_t> >(2048, 0);
   for (size_t i = 0; i < 2048; i++) {
@@ -122,9 +122,8 @@ int main(int argc, char* argv[])
   }
 
   srsran_timestamp_t rx_timestamp = {};
-  uint32_t           tx_slot      = TTI_ADD(dci_slot_cfg.idx, k);
-  srsran_slot_cfg_t  tx_slot_cfg  = {.idx = tx_slot};
-  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, tx_slot, rx_timestamp, dci_ul[0]);
+  srsran_slot_cfg_t  tx_slot_cfg  = {.idx = (uint32_t)target_slot_idx};
+  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, target_slot_idx, rx_timestamp, dci_ul[0]);
 
   /* Initialize gnb_ul to try to decode the generated messages */
   srsran_gnb_ul_t gnb_ul        = {};

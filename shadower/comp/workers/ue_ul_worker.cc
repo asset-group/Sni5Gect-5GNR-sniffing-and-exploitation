@@ -4,7 +4,7 @@ UEULWorker::UEULWorker(srslog::basic_logger& logger_,
                        ShadowerConfig&       config_,
                        Source*               source_,
                        srsue::nr::state&     phy_state_) :
-  logger(logger_), config(config_), phy_state(phy_state_), source(source_)
+  logger(logger_), config(config_), phy_state(phy_state_), source(source_), srsran::thread("UEULWorker")
 {
 }
 
@@ -64,20 +64,29 @@ bool UEULWorker::update_cfg(srsran::phy_cfg_nr_t& phy_cfg_)
   return true;
 }
 
+/* Set the context of the UE UL worker */
+void UEULWorker::set_context(std::shared_ptr<ue_ul_task_t> task_)
+{
+  std::lock_guard<std::mutex> lock(mutex);
+  current_task = task_;
+}
+
 /* Set PUSCH grant */
 int UEULWorker::set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg)
 {
   phy_state.set_ul_pending_grant(phy_cfg, slot_cfg, dci_ul);
   std::lock_guard<std::mutex> lock(mutex);
-  grant_available = true;
-  cv.notify_one();
 
   srsran_sch_cfg_nr_t pusch_cfg = {};
   if (not phy_cfg.get_pusch_cfg(slot_cfg, dci_ul, pusch_cfg)) {
     logger.error("Error computing PUSCH configuration");
     return -1;
   }
-  return pusch_cfg.grant.k;
+  target_slot.idx = TTI_ADD(slot_cfg.idx, pusch_cfg.grant.k);
+  target_dci      = dci_ul;
+  grant_available = true;
+  cv.notify_one();
+  return target_slot.idx;
 }
 
 void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
@@ -135,10 +144,14 @@ void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
   source->send(sdr_buffer, slot_len, tx_timestamp, slot_cfg.idx);
 }
 
-void UEULWorker::work_imp()
+void UEULWorker::run_thread()
 {
   while (running.load()) {
     std::unique_lock<std::mutex> lock(mutex);
+    if (current_task == nullptr) {
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
+      continue;
+    }
     cv.wait(lock, [this] { return grant_available || !running.load(); });
     if (!running.load()) {
       break;
@@ -146,6 +159,6 @@ void UEULWorker::work_imp()
     if (!grant_available) {
       continue;
     }
-    logger.info("Grant available");
+    send_pusch(target_slot, current_task->msg, current_task->rx_slot_idx, current_task->rx_timestamp, target_dci);
   }
 }

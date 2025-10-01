@@ -4,6 +4,7 @@
 #include "shadower/comp/workers/gnb_dl_worker.h"
 #include "shadower/comp/workers/gnb_ul_worker.h"
 #include "shadower/comp/workers/ue_dl_worker.h"
+#include "shadower/comp/workers/ue_ul_worker.h"
 #include "shadower/comp/workers/wd_worker.h"
 #include "shadower/modules/exploit.h"
 #include "shadower/source/source.h"
@@ -71,6 +72,9 @@ public:
   /* Update timing advance */
   void update_timing_advance(int32_t ta_command);
 
+  /* Update DCI UL */
+  int on_dci_ul_found(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg);
+
 private:
   srslog::basic_logger& logger = srslog::fetch_basic_logger("UETracker");
   /* UE name */
@@ -109,10 +113,11 @@ private:
   std::map<uint32_t, srsran_csi_rs_zp_resource_t>                        csi_rs_zp_res  = {};
   std::map<uint32_t, srsran_csi_rs_nzp_resource_t>                       csi_rs_nzp_res = {};
 
-  srsran::phy_cfg_nr_t phy_cfg   = {};   // physical configuration
-  srsue::nr::state     phy_state = {};   // UE side grant tracker
-  int32_t              n_timing_advance; // Timing advance steps
-  double               ta_time;          // Timing advance time
+  srsran::phy_cfg_nr_t phy_cfg      = {}; // physical configuration
+  srsue::nr::state     phy_state    = {}; // UE side grant tracker
+  srsue::nr::state     ul_phy_state = {}; // UE UL grant tracker
+  int32_t              n_timing_advance;  // Timing advance steps
+  double               ta_time;           // Timing advance time
 
   /* cell group config */
   asn1::rrc_nr::cell_group_cfg_s  cell_group_cfg = {};
@@ -123,6 +128,7 @@ private:
   srsran::thread_pool      ue_dl_pool; // thread pool for ue_dl
 
   /* UE UL */
+  UEULWorker* ue_ul_worker = nullptr;
 
   /* GNB DL */
   std::vector<GNBDLWorker*> gnb_dl_workers;

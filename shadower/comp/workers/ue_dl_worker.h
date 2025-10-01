@@ -58,6 +58,10 @@ public:
   /* Update timing advance command */
   std::function<void(int32_t)> update_timing_advance = [](int32_t) {};
 
+  /* Call back for DCI UL found */
+  std::function<int(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg)> on_dci_ul_found =
+      [](srsran_dci_ul_nr_t&, srsran_slot_cfg_t&) { return -1; };
+
 private:
   srslog::basic_logger&             logger;
   std::mutex                        mutex;
