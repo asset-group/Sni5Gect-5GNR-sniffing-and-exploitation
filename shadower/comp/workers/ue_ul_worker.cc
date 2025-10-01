@@ -100,9 +100,10 @@ void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
   srsran_softbuffer_tx_reset(&softbuffer_tx);
 
   // Initialize PUSCH data
-  srsran_pusch_data_nr_t pusch_data = {};
-  pusch_data.payload[0]             = srsran_vec_u8_malloc(pusch_cfg.grant.tb->nof_bits / 8);
-  memcpy(pusch_data.payload[0], pusch_payload->data(), pusch_payload->size());
+  srsran_pusch_data_nr_t pusch_data      = {};
+  uint32_t               number_of_bytes = pusch_cfg.grant.tb->nof_bits / 8;
+  pusch_data.payload[0]                  = srsran_vec_u8_malloc(number_of_bytes);
+  memcpy(pusch_data.payload[0], pusch_payload->data(), number_of_bytes);
 
   // Get PUSCH configuration from dci_ul
   if (!phy_cfg.get_pusch_cfg(slot_cfg, dci_ul, pusch_cfg)) {

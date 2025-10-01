@@ -116,9 +116,9 @@ int main(int argc, char* argv[])
   ue_ul_worker->update_cfg(phy_cfg);
   uint32_t k = ue_ul_worker->set_pusch_grant(dci_ul[0], dci_slot_cfg);
 
-  std::shared_ptr<std::vector<uint8_t> > pusch_payload = std::make_shared<std::vector<uint8_t> >(256, 0);
-  for (size_t i = 0; i < 256; i++) {
-    (*pusch_payload)[i] = i;
+  std::shared_ptr<std::vector<uint8_t> > pusch_payload = std::make_shared<std::vector<uint8_t> >(2048, 0);
+  for (size_t i = 0; i < 2048; i++) {
+    (*pusch_payload)[i] = i % 0xff;
   }
 
   srsran_timestamp_t rx_timestamp = {};
@@ -179,4 +179,8 @@ int main(int argc, char* argv[])
   } else {
     logger.info("PUSCH CRC passed");
   }
+  for (uint32_t i = 0; i < data->N_bytes; i++) {
+    printf("%02x ", data->msg[i]);
+  }
+  printf("\n");
 }
