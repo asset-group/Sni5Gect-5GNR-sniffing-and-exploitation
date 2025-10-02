@@ -89,8 +89,11 @@ int main(int argc, char* argv[])
     srsran_slot_cfg_t slot_cfg = {.idx = dci_slot_number + i};
     /* run ue_dl estimate fft */
     srsran_ue_dl_nr_estimate_fft(&ue_dl, &slot_cfg);
+
+    std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
+    std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
     /* search for dci */
-    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, 0);
+    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, 0, dci_dl, dci_ul);
   }
 
   /* ########################################## Encode the PUSCH message ########################################## */

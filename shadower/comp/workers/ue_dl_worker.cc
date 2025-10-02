@@ -152,8 +152,15 @@ void UEDLWorker::process_task(std::shared_ptr<Task> task_)
 #else
     srsran_ue_dl_nr_estimate_fft(&ue_dl, &slot_cfg);
 #endif // ENABLE_CUDA
+    std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
+    std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
     /* Estimate PDCCH channel and search for both dci ul and dci dl */
-    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, task->task_idx);
+    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, task->task_idx, dci_dl, dci_ul);
+    if (ue_dl.num_ul_dci > 0) {
+      for (uint32_t i = 0; i < ue_dl.num_ul_dci; i++) {
+        on_dci_ul_found(dci_ul[i], slot_cfg);
+      }
+    }
     /* PDSCH decoding */
     handle_pdsch(slot_cfg);
   }

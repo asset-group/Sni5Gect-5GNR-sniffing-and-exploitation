@@ -39,14 +39,17 @@ bool update_ue_dl(srsran_ue_dl_nr_t& ue_dl, srsran::phy_cfg_nr_t& phy_cfg)
 }
 
 /* Run PDCCH search for every CORESET and detect DCI for both dl and ul */
-void ue_dl_dci_search(srsran_ue_dl_nr_t&    ue_dl,
-                      srsran::phy_cfg_nr_t& phy_cfg,
-                      srsran_slot_cfg_t&    slot_cfg,
-                      uint16_t              rnti,
-                      srsran_rnti_type_t    rnti_type,
-                      srsue::nr::state&     phy_state,
-                      srslog::basic_logger& logger,
-                      uint32_t              task_idx)
+void ue_dl_dci_search(srsran_ue_dl_nr_t&                                                         ue_dl,
+                      srsran::phy_cfg_nr_t&                                                      phy_cfg,
+                      srsran_slot_cfg_t&                                                         slot_cfg,
+                      uint16_t                                                                   rnti,
+                      srsran_rnti_type_t                                                         rnti_type,
+                      srsue::nr::state&                                                          phy_state,
+                      srslog::basic_logger&                                                      logger,
+                      uint32_t                                                                   task_idx,
+                      std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR>& dci_dl,
+                      std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR>& dci_ul)
+
 {
   char dci_str[256];
   ue_dl.num_dl_dci = 0;
@@ -58,8 +61,7 @@ void ue_dl_dci_search(srsran_ue_dl_nr_t&    ue_dl,
     }
   }
   /* Function used to detect the DCI for DL within the slot*/
-  std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
-  int                                                                       num_dci_dl =
+  int num_dci_dl =
       srsran_ue_dl_nr_find_dl_dci(&ue_dl, &slot_cfg, rnti, rnti_type, dci_dl.data(), (uint32_t)dci_dl.size());
   ue_dl.num_dl_dci = num_dci_dl;
   for (int i = 0; i < num_dci_dl; i++) {
@@ -70,8 +72,7 @@ void ue_dl_dci_search(srsran_ue_dl_nr_t&    ue_dl,
     }
   }
   /* Function used to detect the DCI for UL within the slot*/
-  std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
-  int                                                                       num_dci_ul =
+  int num_dci_ul =
       srsran_ue_dl_nr_find_ul_dci(&ue_dl, &slot_cfg, rnti, rnti_type, dci_ul.data(), (uint32_t)dci_ul.size());
   ue_dl.num_ul_dci = num_dci_ul;
   for (int i = 0; i < num_dci_ul; i++) {

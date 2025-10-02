@@ -10,6 +10,7 @@ UEULWorker::UEULWorker(srslog::basic_logger& logger_,
 
 UEULWorker::~UEULWorker()
 {
+  running.store(false);
   if (buffer) {
     free(buffer);
     buffer = nullptr;
@@ -142,23 +143,28 @@ void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
   }
   sdr_buffer[config.ul_channel] = buffer;
   source->send(sdr_buffer, slot_len, tx_timestamp, slot_cfg.idx);
+  logger.info("Sent PUSCH at slot %u (%lu.%f)", slot_cfg.idx, tx_timestamp.full_secs, tx_timestamp.frac_secs);
 }
 
 void UEULWorker::run_thread()
 {
+  running.store(true);
   while (running.load()) {
     std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [this] { return grant_available || !running.load(); });
+    if (!running.load()) {
+      logger.info("UE UL Worker stopping");
+      break;
+    }
+    if (!grant_available) {
+      logger.error("No grant available");
+      continue;
+    }
     if (current_task == nullptr) {
       std::this_thread::sleep_for(std::chrono::microseconds(100));
       continue;
     }
-    cv.wait(lock, [this] { return grant_available || !running.load(); });
-    if (!running.load()) {
-      break;
-    }
-    if (!grant_available) {
-      continue;
-    }
     send_pusch(target_slot, current_task->msg, current_task->rx_slot_idx, current_task->rx_timestamp, target_dci);
+    current_task = nullptr;
   }
 }

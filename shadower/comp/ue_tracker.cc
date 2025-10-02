@@ -43,10 +43,9 @@ UETracker::~UETracker()
 /* Activate the current UETracker */
 void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t time_advance)
 {
-  rnti      = rnti_;
-  rnti_type = rnti_type_;
-  name      = "UE-" + std::to_string(rnti);
-
+  rnti             = rnti_;
+  rnti_type        = rnti_type_;
+  name             = "UE-" + std::to_string(rnti);
   n_timing_advance = time_advance * 16 * 64 / (1 << config.scs_common) + phy_cfg.t_offset;
   ta_time          = static_cast<double>(n_timing_advance) * Tc;
 
@@ -66,6 +65,8 @@ void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t
   if (pcap_writer->open(config.pcap_folder + name + ".pcap")) {
     logger.error("Failed to open pcap file");
   }
+  active.store(true);
+
   /* Update last received message timestamp */
   last_message_time = std::chrono::steady_clock::now();
   /* Initialize the gnb_dl thread */
@@ -74,14 +75,13 @@ void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t
   if (ue_ul_worker) {
     ue_ul_worker->start(0);
   }
-  active = true;
   logger.info(GREEN "UETracker %s activated" RESET, name.c_str());
 }
 
 /* Deactivate the current UETracker */
 void UETracker::deactivate()
 {
-  active = false;
+  active.store(false);
   /* If the gnb dl thread is still active, then stop the thread */
   thread_cancel();
   pcap_writer->close();
@@ -314,7 +314,7 @@ void UETracker::run_thread()
   uint32_t epoch_count = 0;
   /* Track last sent slot number, prevent sending the message in the same slot */
   uint32_t last_sent_slot = 0;
-  while (active) {
+  while (active.load()) {
     /* Retrieve the current tracking rx slot index and timestamp*/
     uint32_t           rx_slot_idx;
     srsran_timestamp_t rx_timestamp;
