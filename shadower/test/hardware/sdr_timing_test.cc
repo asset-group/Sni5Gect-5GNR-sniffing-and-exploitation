@@ -19,15 +19,17 @@ extern "C" {
 SafeQueue<Task>   task_queue = {};
 std::atomic<bool> running{true};
 std::atomic<bool> cell_found{false};
-double            test_ssb_freq = 3424.8e6;
-std::string       source_param  = "type=b200";
-uint32_t          advancement   = 9;
-uint32_t          ssb_offset    = 1650;
-uint32_t          test_round    = 100;
-uint32_t          cell_id       = 1;
-uint32_t          ssb_period    = 10;
-uint32_t          count         = 0;
-double            total_cfo     = 0;
+double            test_ssb_freq   = 3424.8e6;
+std::string       source_param    = "type=b200";
+uint32_t          advancement     = 9;
+uint32_t          ssb_offset      = 1650;
+uint32_t          test_round      = 100;
+uint32_t          cell_id         = 1;
+uint32_t          ssb_period      = 10;
+uint32_t          count           = 0;
+double            total_cfo       = 0;
+bool              enable_receiver = false;
+bool              enable_sender   = false;
 std::mutex        mtx;
 
 std::map<int32_t, uint32_t> delay_map;
@@ -133,11 +135,13 @@ int generate_ssb_block(ShadowerConfig& config, srsran::phy_cfg_nr_t& phy_cfg, ui
 }
 
 /* Exit on syncer error, and also stop the sender thread */
-void handle_syncer_exit(Syncer* syncer, std::thread& sender, std::vector<std::thread>& receivers)
+void handle_syncer_exit(Syncer* syncer, std::thread* sender, std::vector<std::thread>& receivers)
 {
   running = false;
   syncer->thread_cancel();
-  pthread_cancel(sender.native_handle());
+  if (sender) {
+    pthread_cancel(sender->native_handle());
+  }
   for (auto& receiver : receivers) {
     pthread_cancel(receiver.native_handle());
   }
@@ -283,8 +287,14 @@ void parse_args(int argc, char* argv[], ShadowerConfig& config)
 {
   int opt;
   config.channels.resize(1);
-  while ((opt = getopt(argc, argv, "dPtTsSfFHgGcrB")) != -1) {
+  while ((opt = getopt(argc, argv, "dPtTsSfFHgGcrBRZ")) != -1) {
     switch (opt) {
+      case 'R':
+        enable_receiver = true;
+        break;
+      case 'Z':
+        enable_sender = true;
+        break;
       case 'd':
         config.source_params = argv[optind];
         break;
@@ -361,7 +371,7 @@ int main(int argc, char* argv[])
   test_args_t     args   = init_test_args(test_number);
   ShadowerConfig& config = args.config;
   parse_args(argc, argv, config);
-  config.syncer_log_level = srslog::basic_levels::debug;
+  config.syncer_log_level = srslog::basic_levels::info;
   /* initialize logger */
   srslog::basic_logger& logger = srslog_init(&config);
   logger.set_level(srslog::basic_levels::debug);
@@ -387,7 +397,7 @@ int main(int argc, char* argv[])
     logger.error("Failed to configure phy cfg from rrc setup");
     return -1;
   }
-  config.enable_recorder = true;
+  config.enable_recorder = false;
   config.channels.resize(config.nof_channels);
   if (config.nof_channels > 1) {
     for (uint32_t i = 1; i < config.nof_channels; i++) {
@@ -432,22 +442,33 @@ int main(int argc, char* argv[])
   syncer->init();
   syncer->on_cell_found    = std::bind(on_cell_found, std::placeholders::_1, std::placeholders::_2);
   syncer->publish_subframe = std::bind(push_new_task, std::placeholders::_1);
-  /* Sender thread keep sending SSB blocks */
-  std::thread sender(
-      sender_thread, std::ref(logger), std::ref(test_ssb_samples), args.slot_len, source, syncer, std::ref(config));
-  pthread_setschedparam(sender.native_handle(), SCHED_OTHER, &param);
+
+  std::thread* sender_ptr = nullptr;
+  if (enable_sender) {
+    /* Sender thread keep sending SSB blocks */
+    logger.info("Starting sender thread");
+    sender_ptr = new std::thread(
+        sender_thread, std::ref(logger), std::ref(test_ssb_samples), args.slot_len, source, syncer, std::ref(config));
+    pthread_setschedparam(sender_ptr->native_handle(), SCHED_OTHER, &param);
+  }
 
   /* Receiver thread keep processing sent SSB blocks */
-  int                      num_receiver_threads = 8;
   std::vector<std::thread> receiver_threads;
-  for (int i = 0; i < num_receiver_threads; i++) {
-    std::thread receiver(receiver_thread, std::ref(logger), std::ref(config), args.sf_len, test_ssb_freq);
-    receiver_threads.push_back(std::move(receiver));
+  if (enable_receiver) {
+    int num_receiver_threads = 4;
+    for (int i = 0; i < num_receiver_threads; i++) {
+      logger.info("Starting receiver thread %d", i);
+      std::thread receiver(receiver_thread, std::ref(logger), std::ref(config), args.sf_len, test_ssb_freq);
+      receiver_threads.push_back(std::move(receiver));
+    }
   }
-  syncer->error_handler = std::bind([&]() { handle_syncer_exit(syncer, sender, receiver_threads); });
+
+  syncer->error_handler = std::bind([&]() { handle_syncer_exit(syncer, sender_ptr, receiver_threads); });
   syncer->start(0);
   syncer->wait_thread_finish();
-  sender.join();
+  if (sender_ptr) {
+    sender_ptr->join();
+  }
   for (auto& receiver : receiver_threads) {
     receiver.join();
   }
