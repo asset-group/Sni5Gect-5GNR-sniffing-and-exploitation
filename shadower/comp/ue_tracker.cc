@@ -73,6 +73,7 @@ void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t
   start(3); // Between Syncer and Scheduler
   /* Start the UE UL worker thread */
   if (ue_ul_worker) {
+    ue_ul_worker->begin();
     ue_ul_worker->start(0);
   }
   logger.info(GREEN "UETracker %s activated" RESET, name.c_str());
@@ -84,6 +85,8 @@ void UETracker::deactivate()
   active.store(false);
   /* If the gnb dl thread is still active, then stop the thread */
   thread_cancel();
+  ue_ul_worker->stop();
+  ue_ul_worker->thread_cancel();
   pcap_writer->close();
   logger.info("Deactivated UETracker %s", name.c_str());
   logger.info("Capture saved to: %s", config.pcap_folder + name + ".pcap");

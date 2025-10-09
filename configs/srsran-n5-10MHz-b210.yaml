@@ -1,0 +1,75 @@
+cell:
+  band: 5 # Band number
+  nof_prb: 52 # Number of Physical Resource Blocks
+  scs_common: 15 # Subcarrier Spacing for common (kHz)
+  scs_ssb: 15 # Subcarrier Spacing for SSB (kHz)
+  ssb_period_ms: 10 # SSB periodicity in milliseconds
+  dl_arfcn: 176000 # Downlink ARFCN
+  ssb_arfcn: 175490 # SSB ARFCN
+
+
+source:
+  source_type: uhd
+  source_params: type=b200,master_clock_rate=11.52e6,serial=3218CC4
+
+enable_recorder: false # record the IQ samples to file
+pcap_folder: logs/
+
+rf:
+  sample_rate: 11.52e6
+  num_channels: 1
+  uplink_cfo: -0.00054 # Uplink Carrier Frequency Offset correction in Hz
+  downlink_cfo: 0 # Downlink Carrier Frequency Offset (CFO) in Hz
+  padding:
+    front_padding: 0 # Number of IQ samples to pad in front of each burst
+    back_padding: 0 # Number of IQ samples to pad at the end of each burst
+  channels:
+    - rx_frequency: 880.0e6
+      tx_frequency: 880.0e6
+      rx_offset: 0
+      tx_offset: 0
+      rx_gain: 40
+      tx_gain: 80
+      enable: true
+
+workers:
+  pool_size: 24 # Worker pool size
+  n_ue_dl_worker: 4 # Number of UE downlink workers
+  n_ue_ul_worker: 4 # Number of UE uplink workers
+  n_gnb_dl_worker: 4 # Number of gNB downlink workers
+  n_gnb_ul_worker: 4 # Number of gNB uplink workers
+
+uetracker:
+  close_timeout: 5000 # ms: stop tracking if no messages received
+  parse_messages: true # Parse messages
+  num_ues: 5 # Number of UETrackers to pre-initialize
+  enable_gpu: false # GPU acceleration for decoding
+
+downlink_injector:
+  delay_n_slots: 5 # Number of slots to delay injecting the message
+  duplications: 2 # Number of duplications to send in each inject
+  tx_cfo_correction: 0 # Uplink CFO correction (Hz)
+  tx_advancement: 160 # Number of samples to send in advance
+  ul_advancement: 178 # Number of samples to send in advance
+  pdsch_mcs: 3 # PDSCH MCS
+  pdsch_prbs: 24 # PDSCH PRBs
+
+
+log:
+  log_level: INFO
+  syncer: INFO
+  worker: INFO
+  bc_worker: INFO
+
+# exploit: build/modules/lib_dummy_exploit.so # exploit module to use
+exploit: build/modules/lib_identity_response.so
+# exploit:  build/modules/lib_identity_request.so
+# exploit:  build/modules/lib_dg_authentication_request_sniffer.so
+# exploit:  build/modules/lib_dg_authentication_replay.so
+# exploit:  build/modules/lib_dg_registration_reject.so
+# exploit:  build/modules/lib_mac_sch_mtk_rlc_crash.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_3.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_4.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_6.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_7.so
+# exploit:  build/modules/lib_plaintext_registration_accept.so

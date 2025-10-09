@@ -18,6 +18,18 @@ UEULWorker::~UEULWorker()
   srsran_ue_ul_nr_free(&ue_ul);
 }
 
+/* Start the UE UL worker */
+void UEULWorker::begin()
+{
+  running.store(true);
+}
+
+void UEULWorker::stop()
+{
+  running.store(false);
+  cv.notify_one();
+}
+
 /* Initialize the UE UL worker  */
 bool UEULWorker::init(srsran::phy_cfg_nr_t& phy_cfg_)
 {
@@ -92,18 +104,11 @@ int UEULWorker::set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& s
 
 void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
                             std::shared_ptr<std::vector<uint8_t> >& pusch_payload,
+                            srsran_sch_cfg_nr_t&                    pusch_cfg,
                             uint32_t                                rx_slot_idx,
                             srsran_timestamp_t&                     rx_timestamp,
                             srsran_dci_ul_nr_t&                     dci_ul)
 {
-  uint32_t            pid             = 0;
-  srsran_sch_cfg_nr_t pusch_cfg       = {};
-  bool                has_pusch_grant = phy_state.get_ul_pending_grant(slot_cfg.idx, pusch_cfg, pid);
-  if (!has_pusch_grant) {
-    logger.error("No UL grant available at slot %d", slot_cfg.idx);
-    return;
-  }
-
   // Setup frequency offset
   srsran_ue_ul_nr_set_freq_offset(&ue_ul, phy_state.get_ul_cfo());
   pusch_cfg.grant.tb->softbuffer.tx = &softbuffer_tx;
@@ -113,14 +118,12 @@ void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
   srsran_pusch_data_nr_t pusch_data      = {};
   uint32_t               number_of_bytes = pusch_cfg.grant.tb->nof_bits / 8;
   pusch_data.payload[0]                  = srsran_vec_u8_malloc(number_of_bytes);
-  memcpy(pusch_data.payload[0], pusch_payload->data(), number_of_bytes);
-
-  // Get PUSCH configuration from dci_ul
-  if (!phy_cfg.get_pusch_cfg(slot_cfg, dci_ul, pusch_cfg)) {
-    logger.error("Failed to get PUSCH configuration");
-    free(pusch_data.payload[0]);
-    return;
+  memset(pusch_data.payload[0], 0, number_of_bytes);
+  uint32_t pusch_data_len = pusch_payload->size();
+  if (pusch_data_len > number_of_bytes) {
+    pusch_data_len = number_of_bytes;
   }
+  memcpy(pusch_data.payload[0], pusch_payload->data(), pusch_data_len);
 
   // encode PUSCH
   if (srsran_ue_ul_nr_encode_pusch(&ue_ul, &slot_cfg, &pusch_cfg, &pusch_data) != SRSRAN_SUCCESS) {
@@ -152,19 +155,23 @@ void UEULWorker::run_thread()
   while (running.load()) {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [this] { return grant_available || !running.load(); });
+    uint32_t            pid             = 0;
+    srsran_sch_cfg_nr_t pusch_cfg       = {};
+    srsran_slot_cfg_t   slot_cfg        = {.idx = target_slot.idx};
+    bool                has_pusch_grant = phy_state.get_ul_pending_grant(slot_cfg.idx, pusch_cfg, pid);
     if (!running.load()) {
       logger.info("UE UL Worker stopping");
       break;
     }
-    if (!grant_available) {
-      logger.error("No grant available");
+    if (!has_pusch_grant) {
       continue;
     }
     if (current_task == nullptr) {
       std::this_thread::sleep_for(std::chrono::microseconds(100));
       continue;
     }
-    send_pusch(target_slot, current_task->msg, current_task->rx_slot_idx, current_task->rx_timestamp, target_dci);
-    current_task = nullptr;
+    grant_available = false;
+    send_pusch(
+        slot_cfg, current_task->msg, pusch_cfg, current_task->rx_slot_idx, current_task->rx_timestamp, target_dci);
   }
 }

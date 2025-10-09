@@ -25,6 +25,12 @@ public:
   /* Initialize the UE UL worker  */
   bool init(srsran::phy_cfg_nr_t& phy_cfg_);
 
+  /* Start the UE UL worker */
+  void begin();
+
+  /* Stop the UE UL worker */
+  void stop();
+
   /* Update the UE UL configurations */
   bool update_cfg(srsran::phy_cfg_nr_t& phy_cfg_);
 
@@ -36,6 +42,7 @@ public:
 
   void send_pusch(srsran_slot_cfg_t&                      slot_cfg,
                   std::shared_ptr<std::vector<uint8_t> >& pusch_payload,
+                  srsran_sch_cfg_nr_t&                    pusch_cfg,
                   uint32_t                                rx_slot_idx,
                   srsran_timestamp_t&                     rx_timestamp,
                   srsran_dci_ul_nr_t&                     dci_ul);

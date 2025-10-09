@@ -123,7 +123,16 @@ int main(int argc, char* argv[])
 
   srsran_timestamp_t rx_timestamp = {};
   srsran_slot_cfg_t  tx_slot_cfg  = {.idx = (uint32_t)target_slot_idx};
-  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, target_slot_idx, rx_timestamp, dci_ul[0]);
+
+  uint32_t            pid             = 0;
+  srsran_sch_cfg_nr_t pusch_cfg       = {};
+  bool                has_pusch_grant = phy_state.get_ul_pending_grant(tx_slot_cfg.idx, pusch_cfg, pid);
+  if (!has_pusch_grant) {
+    logger.info("No PUSCH grant available");
+    return -1;
+  }
+
+  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, pusch_cfg, target_slot_idx, rx_timestamp, dci_ul[0]);
 
   /* Initialize gnb_ul to try to decode the generated messages */
   srsran_gnb_ul_t gnb_ul        = {};
@@ -137,15 +146,6 @@ int main(int argc, char* argv[])
   if (srsran_gnb_ul_fft(&gnb_ul)) {
     logger.error("Error running srsran_gnb_ul_fft");
     return -1;
-  }
-
-  /* Set pusch grant for decoding */
-  phy_state.set_ul_pending_grant(phy_cfg, dci_slot_cfg, dci_ul[0]);
-  uint32_t            pid             = 0;
-  srsran_sch_cfg_nr_t pusch_cfg       = {};
-  bool                has_pusch_grant = phy_state.get_ul_pending_grant(tx_slot_cfg.idx, pusch_cfg, pid);
-  if (!has_pusch_grant) {
-    logger.info("No PUSCH grant available");
   }
 
   /* Initialize the buffer for output*/
