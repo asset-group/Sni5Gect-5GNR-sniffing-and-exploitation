@@ -8,7 +8,7 @@ extern "C" {
 
 int main(int argc, char* argv[])
 {
-  int test_number = 4;
+  int test_number = 0;
   if (argc > 1) {
     test_number = atoi(argv[1]);
   }

@@ -15,9 +15,12 @@ int main(int argc, char* argv[])
   test_args_t     args   = init_test_args(test_number);
   ShadowerConfig& config = args.config;
 
-  std::string dci_ul_file       = "shadower/test/data/srsran-n78-20MHz/dci_ul_3422.fc32";
-  uint32_t    dci_slot_number   = 2;
-  uint32_t    pusch_slot_number = 3426;
+  // std::string dci_ul_file       = "shadower/test/data/srsran-n78-20MHz/dci_ul_3422.fc32";
+  // uint32_t    dci_slot_number   = 2;
+  // uint32_t    pusch_slot_number = 3426;
+  std::string dci_ul_file       = "shadower/test/data/srsran-n5-10MHz/dci_10030.fc32";
+  uint32_t    dci_slot_number   = 10;
+  uint32_t    pusch_slot_number = 14;
 
   /* initialize logger */
   srslog::basic_logger& logger = srslog_init(&args.config);
@@ -99,7 +102,7 @@ int main(int argc, char* argv[])
   /* ########################################## Encode the PUSCH message ########################################## */
   uint32_t            pid         = 0;
   srsran_sch_cfg_nr_t pusch_cfg   = {};
-  srsran_slot_cfg_t   ul_slot_cfg = {.idx = pusch_slot_number + 1};
+  srsran_slot_cfg_t   ul_slot_cfg = {.idx = pusch_slot_number};
 
   // Get pending ul grant
   bool has_pusch_grant = phy_state.get_ul_pending_grant(ul_slot_cfg.idx, pusch_cfg, pid);
@@ -123,6 +126,7 @@ int main(int argc, char* argv[])
   // Initialize PUSCH data
   srsran_pusch_data_nr_t pusch_data = {};
   pusch_data.payload[0]             = srsran_vec_u8_malloc(pusch_cfg.grant.tb->nof_bits / 8);
+  memset(pusch_data.payload[0], 0, pusch_cfg.grant.tb->nof_bits / 8);
   memcpy(pusch_data.payload[0], message, sizeof(message));
 
   srsran_dci_ul_nr_t dci_ul     = {};

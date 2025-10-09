@@ -47,6 +47,11 @@ int main(int argc, char* argv[])
       slot_number = 18;
       half        = 0;
       break;
+    case 6:
+      sample_file = "shadower/test/data/srsran-n5-10MHz/rar.fc32";
+      slot_number = 9988;
+      half        = 0;
+      break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
       exit(EXIT_FAILURE);

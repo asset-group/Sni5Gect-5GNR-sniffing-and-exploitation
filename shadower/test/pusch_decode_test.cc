@@ -116,6 +116,15 @@ int main(int argc, char* argv[])
     //   half             = 0;
     //   ul_offset        = 480;
     //   break;
+    case 6:
+      dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci_10030.fc32";
+      dci_slot_number  = 10;
+      ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch_10034.fc32";
+      ul_slot_number   = 14;
+      last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch_10033.fc32";
+      half             = 0;
+      ul_offset        = 0;
+      break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
       exit(EXIT_FAILURE);
