@@ -380,7 +380,7 @@ test_args_t init_test_args(int test_number)
     test_args.rrc_setup_raw     = "shadower/test/data/srsran-n5-10MHz/rrc_setup.raw";
     test_args.rrc_setup_size    = 297;
     test_args.rar_ul_grant_file = "shadower/test/data/srsran-n5-10MHz/rach_msg2_ul_grant.raw";
-    test_args.c_rnti            = 17925;
+    test_args.c_rnti            = 17921;
     test_args.ra_rnti           = 15;
     test_args.ncellid           = 1;
   } else {

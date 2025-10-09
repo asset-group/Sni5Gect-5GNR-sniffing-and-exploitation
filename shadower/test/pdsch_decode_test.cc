@@ -66,8 +66,8 @@ int main(int argc, char* argv[])
     case 6:
       // sample_file = "shadower/test/data/srsran-n5-10MHz/pdsch_10056.fc32";
       // slot_number = 16;
-      sample_file = "/root/sni5gect/subframes/sf_1833_10083_ch_0.fc32";
-      slot_number = 3;
+      sample_file = "shadower/test/data/srsran-n5-10MHz/pdsch_617.fc32";
+      slot_number = 17;
       half        = 0;
       break;
     default:
