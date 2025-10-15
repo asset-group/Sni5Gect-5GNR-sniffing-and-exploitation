@@ -7,7 +7,6 @@ cell:
   dl_arfcn: 176000 # Downlink ARFCN
   ssb_arfcn: 175490 # SSB ARFCN
 
-
 source:
   source_type: uhd
   source_params: type=b200,master_clock_rate=11.52e6,serial=3218CC4
@@ -24,12 +23,12 @@ rf:
     front_padding: 0 # Number of IQ samples to pad in front of each burst
     back_padding: 0 # Number of IQ samples to pad at the end of each burst
   channels:
-    - rx_frequency: 880.0e6
-      tx_frequency: 880.0e6
+    - rx_frequency: 880e6
+      tx_frequency: 835e6
       rx_offset: 0
       tx_offset: 0
       rx_gain: 40
-      tx_gain: 80
+      tx_gain: 70
       enable: true
 
 workers:
@@ -50,7 +49,7 @@ downlink_injector:
   duplications: 2 # Number of duplications to send in each inject
   tx_cfo_correction: 0 # Uplink CFO correction (Hz)
   tx_advancement: 160 # Number of samples to send in advance
-  ul_advancement: 178 # Number of samples to send in advance
+  ul_advancement: 509 # Number of samples to send in advance
   pdsch_mcs: 3 # PDSCH MCS
   pdsch_prbs: 24 # PDSCH PRBs
 
@@ -62,7 +61,7 @@ log:
   bc_worker: INFO
 
 # exploit: build/modules/lib_dummy_exploit.so # exploit module to use
-exploit: build/modules/lib_identity_response.so
+exploit: build/modules/lib_test_pusch.so
 # exploit:  build/modules/lib_identity_request.so
 # exploit:  build/modules/lib_dg_authentication_request_sniffer.so
 # exploit:  build/modules/lib_dg_authentication_replay.so

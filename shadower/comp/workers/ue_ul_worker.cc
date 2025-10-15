@@ -44,14 +44,14 @@ bool UEULWorker::init(srsran::phy_cfg_nr_t& phy_cfg_)
   slot_duration = SF_DURATION / slot_per_sf;
 
   /* Init buffer */
-  buffer = srsran_vec_cf_malloc(sf_len);
+  buffer = srsran_vec_cf_malloc(sf_len + config.front_padding + config.back_padding);
   if (!buffer) {
     logger.error("Error allocating buffer");
     return false;
   }
 
   /* Init ue_ul instance */
-  if (!init_ue_ul(ue_ul, buffer, phy_cfg)) {
+  if (!init_ue_ul(ue_ul, buffer + config.front_padding, phy_cfg)) {
     logger.error("Error initializing ue_ul");
     return false;
   }
@@ -98,6 +98,7 @@ int UEULWorker::set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& s
   target_slot.idx = TTI_ADD(slot_cfg.idx, pusch_cfg.grant.k);
   target_dci      = dci_ul;
   grant_available = true;
+  logger.debug("Set PUSCH grant for slot %d, target slot %d", slot_cfg.idx, target_slot.idx);
   cv.notify_one();
   return target_slot.idx;
 }
@@ -145,7 +146,7 @@ void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
     sdr_buffer[ch] = nullptr;
   }
   sdr_buffer[config.ul_channel] = buffer;
-  source->send(sdr_buffer, slot_len, tx_timestamp, slot_cfg.idx);
+  source->send(sdr_buffer, slot_len + config.front_padding + config.back_padding, tx_timestamp, slot_cfg.idx);
   logger.info("Sent PUSCH at slot %u (%lu.%f)", slot_cfg.idx, tx_timestamp.full_secs, tx_timestamp.frac_secs);
 }
 

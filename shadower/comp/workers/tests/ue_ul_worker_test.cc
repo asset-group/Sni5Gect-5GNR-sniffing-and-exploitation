@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
     logger.info("PUSCH CRC passed");
   }
   for (uint32_t i = 0; i < data->N_bytes; i++) {
-    printf("%02x ", data->msg[i]);
+    printf("0x%02x, ", data->msg[i]);
   }
   printf("\n");
 }

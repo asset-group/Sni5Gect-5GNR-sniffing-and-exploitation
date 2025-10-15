@@ -333,6 +333,7 @@ void UETracker::run_thread()
       ul_task_ptr->rx_timestamp                             = rx_timestamp;
       ul_task_ptr->msg                                      = ul_new_msg;
       ue_ul_worker->set_context(ul_task_ptr);
+      logger.debug("Setting new ul task for RNTI: %u, size: %zu", rnti, ul_new_msg->size());
     }
 
     std::shared_ptr<std::vector<uint8_t> > new_msg = dl_msg_queue.retrieve_non_blocking();
