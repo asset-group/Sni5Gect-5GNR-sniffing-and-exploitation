@@ -2,6 +2,7 @@
 #include "shadower/source/source.h"
 #include "shadower/utils/arg_parser.h"
 #include "shadower/utils/constants.h"
+#include "shadower/utils/safe_queue.h"
 #include "shadower/utils/utils.h"
 #include "srsran/common/phy_cfg_nr.h"
 #include "srsran/common/threads.h"
@@ -60,10 +61,12 @@ private:
 
   srslog::basic_logger&   logger;
   Source*                 source;
-  bool                    grant_available = false;
+  std::atomic<int>        grant_available{0};
   std::mutex              mutex;
   std::condition_variable cv;
   std::atomic<bool>       running{true};
+
+  SafeQueue<uint32_t> target_slots_queue;
 
   ShadowerConfig&        config;
   srsue::nr::state&      phy_state;
@@ -79,6 +82,5 @@ private:
   uint32_t nof_re        = 0;
   double   slot_duration = SF_DURATION;
 
-  srsran_slot_cfg_t             target_slot  = {};
   std::shared_ptr<ue_ul_task_t> current_task = nullptr;
 };

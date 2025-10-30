@@ -28,7 +28,7 @@ rf:
       rx_offset: 0
       tx_offset: 0
       rx_gain: 40
-      tx_gain: 70
+      tx_gain: 80
       enable: true
 
 workers:
@@ -41,12 +41,12 @@ workers:
 uetracker:
   close_timeout: 5000 # ms: stop tracking if no messages received
   parse_messages: true # Parse messages
-  num_ues: 5 # Number of UETrackers to pre-initialize
+  num_ues: 10 # Number of UETrackers to pre-initialize
   enable_gpu: false # GPU acceleration for decoding
 
 downlink_injector:
   delay_n_slots: 5 # Number of slots to delay injecting the message
-  duplications: 2 # Number of duplications to send in each inject
+  duplications: 4 # Number of duplications to send in each inject
   tx_cfo_correction: 0 # Uplink CFO correction (Hz)
   tx_advancement: 160 # Number of samples to send in advance
   ul_advancement: 509 # Number of samples to send in advance
@@ -61,7 +61,9 @@ log:
   bc_worker: INFO
 
 # exploit: build/modules/lib_dummy_exploit.so # exploit module to use
-exploit: build/modules/lib_test_pusch.so
+# exploit: build/modules/lib_malform_rrc_setup_complete.so
+exploit: build/modules/lib_malform_rrc_setup_request.so
+# exploit: build/modules/lib_test_pusch.so
 # exploit:  build/modules/lib_identity_request.so
 # exploit:  build/modules/lib_dg_authentication_request_sniffer.so
 # exploit:  build/modules/lib_dg_authentication_replay.so

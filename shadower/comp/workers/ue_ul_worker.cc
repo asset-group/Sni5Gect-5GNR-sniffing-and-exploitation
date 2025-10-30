@@ -96,11 +96,12 @@ int UEULWorker::set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& s
     logger.error("Error computing PUSCH configuration");
     return -1;
   }
-  target_slot.idx = TTI_ADD(slot_cfg.idx, pusch_cfg.grant.k);
-  grant_available = true;
-  logger.debug("Set PUSCH grant for slot %d, target slot %d", slot_cfg.idx, target_slot.idx);
+  uint32_t target_slot_idx = TTI_ADD(slot_cfg.idx, pusch_cfg.grant.k);
+  target_slots_queue.push(std::make_shared<uint32_t>(target_slot_idx));
+  grant_available += 1;
+  logger.debug("Set PUSCH grant for slot %d, target slot %d", slot_cfg.idx, target_slot_idx);
   cv.notify_one();
-  return target_slot.idx;
+  return target_slot_idx;
 }
 
 /* Set RAR grant */
@@ -115,9 +116,10 @@ void UEULWorker::set_ue_rar_grant(uint16_t                                      
     return;
   }
   std::lock_guard<std::mutex> lock(mutex);
-  target_slot.idx = TTI_ADD(slot_idx, grant_k);
-  logger.debug("Set RAR grant for at slot %u target slot %d", slot_idx, target_slot.idx);
-  grant_available = true;
+  uint32_t                    target_slot_idx = TTI_ADD(slot_idx, grant_k);
+  target_slots_queue.push(std::make_shared<uint32_t>(target_slot_idx));
+  logger.debug("Set RAR grant for at slot %u target slot %d", slot_idx, target_slot_idx);
+  grant_available += 1;
   cv.notify_one();
   return;
 }
@@ -174,10 +176,15 @@ void UEULWorker::run_thread()
   while (running.load()) {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [this] { return grant_available || !running.load(); });
-    uint32_t            pid             = 0;
-    srsran_sch_cfg_nr_t pusch_cfg       = {};
-    srsran_slot_cfg_t   slot_cfg        = {.idx = target_slot.idx};
-    bool                has_pusch_grant = phy_state.get_ul_pending_grant(slot_cfg.idx, pusch_cfg, pid);
+    uint32_t                  pid         = 0;
+    srsran_sch_cfg_nr_t       pusch_cfg   = {};
+    std::shared_ptr<uint32_t> target_slot = target_slots_queue.retrieve_non_blocking();
+    if (!target_slot) {
+      continue;
+    }
+    uint32_t          target_slot_idx = *target_slot;
+    srsran_slot_cfg_t slot_cfg        = {.idx = target_slot_idx};
+    bool              has_pusch_grant = phy_state.get_ul_pending_grant(slot_cfg.idx, pusch_cfg, pid);
     if (!running.load()) {
       logger.info("UE UL Worker stopping");
       break;
@@ -189,7 +196,11 @@ void UEULWorker::run_thread()
       std::this_thread::sleep_for(std::chrono::microseconds(100));
       continue;
     }
-    grant_available = false;
+    if (target_slot_idx < current_task->rx_slot_idx + 2) {
+      logger.debug("Target slot %d is too close to rx slot %d, skipping", target_slot_idx, current_task->rx_slot_idx);
+      continue;
+    }
+    grant_available -= 1;
     send_pusch(slot_cfg, current_task->msg, pusch_cfg, current_task->rx_slot_idx, current_task->rx_timestamp);
   }
 }
