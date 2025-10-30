@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, pusch_cfg, target_slot_idx, rx_timestamp, dci_ul[0]);
+  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, pusch_cfg, target_slot_idx, rx_timestamp);
 
   /* Initialize gnb_ul to try to decode the generated messages */
   srsran_gnb_ul_t gnb_ul        = {};

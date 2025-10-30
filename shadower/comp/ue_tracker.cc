@@ -66,6 +66,7 @@ void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t
     logger.error("Failed to open pcap file");
   }
   active.store(true);
+  exploit->reset();
 
   /* Update last received message timestamp */
   last_message_time = std::chrono::steady_clock::now();
@@ -303,9 +304,11 @@ bool UETracker::update_cfg()
 void UETracker::set_ue_rar_grant(std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS>& grant,
                                  uint32_t                                                        slot_idx)
 {
-  if (!set_rar_grant(rnti, rnti_type, slot_idx, grant, phy_cfg, phy_state, logger)) {
+  uint32_t grant_k = 0;
+  if (!set_rar_grant(rnti, rnti_type, slot_idx, grant, phy_cfg, phy_state, &grant_k, logger)) {
     logger.error("Failed to set RAR grant for UE: %u", rnti);
   }
+  ue_ul_worker->set_ue_rar_grant(rnti, rnti_type, grant, slot_idx);
 }
 
 /* GNB DL thread implementation, keep retrieve task from the queue and run the task */

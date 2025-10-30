@@ -1,4 +1,5 @@
 #include "shadower/comp/workers/ue_ul_worker.h"
+#include "shadower/utils/utils.h"
 
 UEULWorker::UEULWorker(srslog::basic_logger& logger_,
                        ShadowerConfig&       config_,
@@ -96,19 +97,36 @@ int UEULWorker::set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& s
     return -1;
   }
   target_slot.idx = TTI_ADD(slot_cfg.idx, pusch_cfg.grant.k);
-  target_dci      = dci_ul;
   grant_available = true;
   logger.debug("Set PUSCH grant for slot %d, target slot %d", slot_cfg.idx, target_slot.idx);
   cv.notify_one();
   return target_slot.idx;
 }
 
+/* Set RAR grant */
+void UEULWorker::set_ue_rar_grant(uint16_t                                                        rnti,
+                                  srsran_rnti_type_t                                              rnti_type,
+                                  std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS>& rar_grant,
+                                  uint32_t                                                        slot_idx)
+{
+  uint32_t grant_k = 0;
+  if (!set_rar_grant(rnti, rnti_type, slot_idx, rar_grant, phy_cfg, phy_state, &grant_k, logger)) {
+    logger.error("Failed to set RAR grant for RNTI: %u", rnti);
+    return;
+  }
+  std::lock_guard<std::mutex> lock(mutex);
+  target_slot.idx = TTI_ADD(slot_idx, grant_k);
+  logger.debug("Set RAR grant for at slot %u target slot %d", slot_idx, target_slot.idx);
+  grant_available = true;
+  cv.notify_one();
+  return;
+}
+
 void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
                             std::shared_ptr<std::vector<uint8_t> >& pusch_payload,
                             srsran_sch_cfg_nr_t&                    pusch_cfg,
                             uint32_t                                rx_slot_idx,
-                            srsran_timestamp_t&                     rx_timestamp,
-                            srsran_dci_ul_nr_t&                     dci_ul)
+                            srsran_timestamp_t&                     rx_timestamp)
 {
   // Setup frequency offset
   srsran_ue_ul_nr_set_freq_offset(&ue_ul, phy_state.get_ul_cfo());
@@ -172,7 +190,6 @@ void UEULWorker::run_thread()
       continue;
     }
     grant_available = false;
-    send_pusch(
-        slot_cfg, current_task->msg, pusch_cfg, current_task->rx_slot_idx, current_task->rx_timestamp, target_dci);
+    send_pusch(slot_cfg, current_task->msg, pusch_cfg, current_task->rx_slot_idx, current_task->rx_timestamp);
   }
 }

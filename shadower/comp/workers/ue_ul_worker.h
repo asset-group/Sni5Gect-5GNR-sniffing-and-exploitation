@@ -5,6 +5,7 @@
 #include "shadower/utils/utils.h"
 #include "srsran/common/phy_cfg_nr.h"
 #include "srsran/common/threads.h"
+#include "srsran/mac/mac_rar_pdu_nr.h"
 #include "srsran/srslog/logger.h"
 #include <semaphore>
 
@@ -40,12 +41,17 @@ public:
   /* Set PUSCH grant */
   int set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg);
 
+  /* Set RAR grant */
+  void set_ue_rar_grant(uint16_t                                                        rnti,
+                        srsran_rnti_type_t                                              rnti_type,
+                        std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS>& rar_grant,
+                        uint32_t                                                        slot_idx);
+
   void send_pusch(srsran_slot_cfg_t&                      slot_cfg,
                   std::shared_ptr<std::vector<uint8_t> >& pusch_payload,
                   srsran_sch_cfg_nr_t&                    pusch_cfg,
                   uint32_t                                rx_slot_idx,
-                  srsran_timestamp_t&                     rx_timestamp,
-                  srsran_dci_ul_nr_t&                     dci_ul);
+                  srsran_timestamp_t&                     rx_timestamp);
 
   cf_t* buffer = nullptr;
 
@@ -74,6 +80,5 @@ private:
   double   slot_duration = SF_DURATION;
 
   srsran_slot_cfg_t             target_slot  = {};
-  srsran_dci_ul_nr_t            target_dci   = {};
   std::shared_ptr<ue_ul_task_t> current_task = nullptr;
 };
