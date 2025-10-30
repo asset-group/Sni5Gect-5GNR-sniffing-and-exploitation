@@ -65,6 +65,7 @@ private:
   std::mutex              mutex;
   std::condition_variable cv;
   std::atomic<bool>       running{true};
+  std::atomic<int>        injected_count{0};
 
   SafeQueue<uint32_t> target_slots_queue;
 

@@ -46,7 +46,7 @@ uetracker:
 
 downlink_injector:
   delay_n_slots: 5 # Number of slots to delay injecting the message
-  duplications: 4 # Number of duplications to send in each inject
+  duplications: 10 # Number of duplications to send in each inject
   tx_cfo_correction: 0 # Uplink CFO correction (Hz)
   tx_advancement: 160 # Number of samples to send in advance
   ul_advancement: 509 # Number of samples to send in advance

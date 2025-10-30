@@ -23,6 +23,7 @@ UEULWorker::~UEULWorker()
 void UEULWorker::begin()
 {
   running.store(true);
+  injected_count.store(0);
 }
 
 void UEULWorker::stop()
@@ -168,6 +169,7 @@ void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
   sdr_buffer[config.ul_channel] = buffer;
   source->send(sdr_buffer, slot_len + config.front_padding + config.back_padding, tx_timestamp, slot_cfg.idx);
   logger.info("Sent PUSCH at slot %u (%lu.%f)", slot_cfg.idx, tx_timestamp.full_secs, tx_timestamp.frac_secs);
+  injected_count += 1;
 }
 
 void UEULWorker::run_thread()
@@ -202,5 +204,9 @@ void UEULWorker::run_thread()
     }
     grant_available -= 1;
     send_pusch(slot_cfg, current_task->msg, pusch_cfg, current_task->rx_slot_idx, current_task->rx_timestamp);
+    if (injected_count > config.duplications) {
+      current_task = nullptr;
+      injected_count.store(0);
+    }
   }
 }
