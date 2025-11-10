@@ -18,7 +18,7 @@
 
 #### Core Features
 * 🔎 Sniff: Capture 5G MAC-NR unencrypted messages between the base station and UE.
-* 💉 Inject: Send arbitrary MAC-NR messages to a target UE at specific communication states.
+* 💉 Inject: Send arbitrary MAC-NR messages to a target UE/base station at specific communication states.
 #### Example Use Cases
 * 💥 Crash UE modems.
 * 📉 Downgrade attacks (5G to 4G).
