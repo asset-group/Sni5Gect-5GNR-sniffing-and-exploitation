@@ -60,9 +60,7 @@ log:
   worker: INFO
   bc_worker: INFO
 
-# exploit: build/modules/lib_dummy_exploit.so # exploit module to use
-# exploit: build/modules/lib_malform_rrc_setup_complete.so
-exploit: build/modules/lib_malform_rrc_setup_request.so
+exploit: build/modules/lib_dummy_exploit.so # exploit module to use
 # exploit: build/modules/lib_test_pusch.so
 # exploit:  build/modules/lib_identity_request.so
 # exploit:  build/modules/lib_dg_authentication_request_sniffer.so

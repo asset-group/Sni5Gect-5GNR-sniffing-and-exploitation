@@ -303,7 +303,7 @@ static void chest_ul_estimate(srsran_chest_ul_t*     q,
                               bool                   meas_ta_en,
                               bool                   use_cedron_alg,
                               bool                   write_estimates,
-                              uint32_t               n_prb[SRSRAN_NOF_SLOTS_PER_SF(srsran_subcarrier_spacing_15kHz)],
+                              uint32_t               n_prb[SRSRAN_NOF_SLOTS_PER_SF(srsran_subcarrier_spacing_30kHz)],
                               srsran_chest_ul_res_t* res)
 {
   // Calculate CFO
@@ -434,7 +434,7 @@ int srsran_chest_ul_estimate_pusch(srsran_chest_ul_t*     q,
 }
 
 static float
-estimate_noise_pilots_pucch(srsran_chest_ul_t* q, cf_t* ce, uint32_t n_rs, uint32_t n_prb[SRSRAN_NOF_SLOTS_PER_SF(srsran_subcarrier_spacing_240kHz)])
+estimate_noise_pilots_pucch(srsran_chest_ul_t* q, cf_t* ce, uint32_t n_rs, uint32_t n_prb[SRSRAN_NOF_SLOTS_PER_SF(srsran_subcarrier_spacing_15kHz)])
 {
   float power = 0;
   for (int ns = 0; ns < SRSRAN_NOF_SLOTS_PER_SF(srsran_subcarrier_spacing_15kHz); ns++) {
