@@ -4,8 +4,8 @@
 
 > A framework for 5G NR Sniffing and Injection 
 
-A 5G Sniffer and Downlink Injector on steroids... And yes, Wireshark supported!!!
-Supports **DCI Sniffing**, **MAC-NR Downlink/Uplink message sniffing** and **MAC-NR Downlink message injection**
+A 5G Sniffer and Injector on steroids... And yes, Wireshark supported!!!
+Supports **DCI Sniffing**, **MAC-NR Downlink/Uplink message sniffing** and **MAC-NR Downlink/Uplink message injection**
 
 [GitHub](https://github.com/asset-group/Sni5Gect-5GNR-sniffing-and-exploitation)
 [Get Started](/get_started)

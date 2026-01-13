@@ -600,6 +600,21 @@
             "preLaunchTask": "build_all"
         },
         {
+            "name": "ue_ul_worker_test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/shadower/comp/workers/ue_ul_worker_test",
+            "args": [
+                "0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build_all"
+        },
+        {
             "name": "pdsch_decode_search",
             "type": "cppdbg",
             "request": "launch",

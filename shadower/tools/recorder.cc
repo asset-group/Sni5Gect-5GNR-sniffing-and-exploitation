@@ -96,6 +96,8 @@ void parse_args(int argc, char* argv[])
 {
   int opt;
   config.channels.resize(2);
+  memset(&config.channels[0], 0, sizeof(ChannelConfig));
+  memset(&config.channels[1], 0, sizeof(ChannelConfig));
   while ((opt = getopt(argc, argv, "f:F:g:G:s:t:d:n:o:O:")) != -1) {
     switch (opt) {
       case 'f': {

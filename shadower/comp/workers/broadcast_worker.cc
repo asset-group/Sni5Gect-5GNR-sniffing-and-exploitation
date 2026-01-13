@@ -66,8 +66,10 @@ bool BroadCastWorker::work(const std::shared_ptr<Task>& task)
 #else
     srsran_ue_dl_nr_estimate_fft(&ue_dl, &slot_cfg);
 #endif // ENABLE_CUDA
+    std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
+    std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
     /* Estimate PDCCH channel and search for both dci ul and dci dl */
-    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, task->task_idx);
+    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, task->task_idx, dci_dl, dci_ul);
     /* PDSCH decoding */
     pdsch_decode(slot_cfg.idx, task->task_idx);
   }

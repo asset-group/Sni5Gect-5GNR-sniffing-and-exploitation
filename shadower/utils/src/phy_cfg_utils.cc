@@ -54,6 +54,7 @@ bool set_rar_grant(uint16_t                                        rnti,
                    std::array<uint8_t, SRSRAN_RAR_UL_GRANT_NBITS>& grant,
                    srsran::phy_cfg_nr_t&                           phy_cfg,
                    srsue::nr::state&                               phy_state,
+                   uint32_t*                                       grant_k,
                    srslog::basic_logger&                           logger)
 {
   srsran_dci_msg_nr_t dci_msg = {};
@@ -80,7 +81,14 @@ bool set_rar_grant(uint16_t                                        rnti,
   } else {
     slot_cfg.idx = slot_idx;
   }
+  // Extract the K value from the grant
   phy_state.set_ul_pending_grant(phy_cfg, slot_cfg, dci_ul);
+  srsran_sch_cfg_nr_t pusch_cfg = {};
+  if (not phy_cfg.get_pusch_cfg(slot_cfg, dci_ul, pusch_cfg)) {
+    logger.error("Computing PUSCH cfg from RAR grant failed");
+    return false;
+  }
+  *grant_k = pusch_cfg.grant.k;
   return true;
 }
 

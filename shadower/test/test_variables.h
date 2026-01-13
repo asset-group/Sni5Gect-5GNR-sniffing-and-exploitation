@@ -24,6 +24,46 @@ struct test_args_t {
 };
 
 /* Shadower config for srsran n3 20MHz*/
+ShadowerConfig srsran_n5_10MHz_config = {
+    .band              = 5,
+    .nof_prb           = 52,
+    .scs_common        = srsran_subcarrier_spacing_15kHz,
+    .scs_ssb           = srsran_subcarrier_spacing_15kHz,
+    .ssb_period_ms     = 10,
+    .ssb_period        = 10,
+    .dl_freq           = 880e6,
+    .ul_freq           = 835e6,
+    .ssb_freq          = 877.45e6,
+    .sample_rate       = 11.52e6,
+    .nof_channels      = 1,
+    .uplink_cfo        = 0,
+    .ssb_pattern       = SRSRAN_SSB_PATTERN_A,
+    .duplex_mode       = SRSRAN_DUPLEX_MODE_FDD,
+    .delay_n_slots     = 3,
+    .duplications      = 4,
+    .tx_cfo_correction = 0.0,
+    .tx_advancement    = 160,
+    .pdsch_mcs         = 3,
+    .pdsch_prbs        = 24,
+    .n_ue_dl_worker    = 4,
+    .n_ue_ul_worker    = 4,
+    .n_gnb_ul_worker   = 4,
+    .n_gnb_dl_worker   = 4,
+    .close_timeout     = 5000,
+    .parse_messages    = true,
+    .enable_gpu        = false,
+    .enable_recorder   = false,
+    .source_type       = "file",
+    .source_params     = "/root/records/fdd/n3_ch_0.fc32,/root/records/fdd/n3_ch_1.fc32",
+    .source_module     = file_source_module_path,
+    .log_level         = srslog::basic_levels::debug,
+    .bc_worker_level   = srslog::basic_levels::debug,
+    .worker_log_level  = srslog::basic_levels::debug,
+    .syncer_log_level  = srslog::basic_levels::debug,
+    .pcap_folder       = "/tmp/",
+};
+
+/* Shadower config for srsran n3 20MHz*/
 ShadowerConfig srsran_n3_20MHz_config = {
     .band              = 3,
     .nof_prb           = 106,
@@ -332,6 +372,17 @@ test_args_t init_test_args(int test_number)
     test_args.c_rnti            = 22754;
     test_args.ra_rnti           = 57;
     test_args.ncellid           = 471;
+  } else if (test_number == 6) {
+    test_args.config            = srsran_n5_10MHz_config;
+    test_args.mib_config_raw    = "shadower/test/data/srsran-n5-10MHz/mib.raw";
+    test_args.sib_config_raw    = "shadower/test/data/srsran-n5-10MHz/sib1.raw";
+    test_args.sib_size          = 80;
+    test_args.rrc_setup_raw     = "shadower/test/data/srsran-n5-10MHz/rrc_setup.raw";
+    test_args.rrc_setup_size    = 297;
+    test_args.rar_ul_grant_file = "shadower/test/data/srsran-n5-10MHz/rach_msg2_ul_grant.raw";
+    test_args.c_rnti            = 17921;
+    test_args.ra_rnti           = 15;
+    test_args.ncellid           = 1;
   } else {
     throw std::invalid_argument("Invalid test number");
   }

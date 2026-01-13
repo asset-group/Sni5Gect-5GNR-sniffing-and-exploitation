@@ -116,6 +116,25 @@ int main(int argc, char* argv[])
     //   half             = 0;
     //   ul_offset        = 480;
     //   break;
+    case 6:
+      // dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci_10030.fc32";
+      // dci_slot_number  = 10;
+      // ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch_10034.fc32";
+      // ul_slot_number   = 14;
+      // last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch_10033.fc32";
+      half      = 0;
+      ul_offset = 0;
+      // dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci_605.fc32";
+      // dci_slot_number  = 5;
+      // ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch_609.fc32";
+      // ul_slot_number   = 9;
+      // last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch_608.fc32";
+      dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci_625.fc32";
+      dci_slot_number  = 5;
+      ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch_629.fc32";
+      ul_slot_number   = 9;
+      last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch_628.fc32";
+      break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
       exit(EXIT_FAILURE);
@@ -190,8 +209,10 @@ int main(int argc, char* argv[])
     sprintf(filename, "ofdm_dci_%d_fft%u", i, args.nof_sc);
     write_record_to_file(ue_dl.sf_symbols[0], args.nof_re, filename);
 
+    std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
+    std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
     /* search for dci */
-    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, srsran_rnti_type_c, phy_state, logger, 0);
+    ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, srsran_rnti_type_c, phy_state, logger, 0, dci_dl, dci_ul);
   }
 
   /* load test samples */

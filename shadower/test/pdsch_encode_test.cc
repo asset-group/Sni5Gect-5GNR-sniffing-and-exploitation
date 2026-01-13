@@ -179,8 +179,10 @@ int main(int argc, char* argv[])
   /* This step directly copy the OFDM symbols to decode */
   // srsran_vec_cf_copy(ue_dl.sf_symbols[0], gnb_dl.sf_symbols[0], args.nof_re);
 
+  std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
+  std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
   /* search for dci */
-  ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, 0);
+  ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, rnti_type, phy_state, logger, 0, dci_dl, dci_ul);
 
   /* get grant from dci search */
   uint32_t                   pid             = 0;

@@ -1,0 +1,212 @@
+#include "shadower/comp/workers/ue_ul_worker.h"
+#include "shadower/utils/utils.h"
+
+UEULWorker::UEULWorker(srslog::basic_logger& logger_,
+                       ShadowerConfig&       config_,
+                       Source*               source_,
+                       srsue::nr::state&     phy_state_) :
+  logger(logger_), config(config_), phy_state(phy_state_), source(source_), srsran::thread("UEULWorker")
+{
+}
+
+UEULWorker::~UEULWorker()
+{
+  running.store(false);
+  if (buffer) {
+    free(buffer);
+    buffer = nullptr;
+  }
+  srsran_ue_ul_nr_free(&ue_ul);
+}
+
+/* Start the UE UL worker */
+void UEULWorker::begin()
+{
+  running.store(true);
+  injected_count.store(0);
+}
+
+void UEULWorker::stop()
+{
+  running.store(false);
+  cv.notify_one();
+}
+
+/* Initialize the UE UL worker  */
+bool UEULWorker::init(srsran::phy_cfg_nr_t& phy_cfg_)
+{
+  std::lock_guard<std::mutex> lock(mutex);
+  phy_cfg       = phy_cfg_;
+  srate         = config.sample_rate;
+  sf_len        = srate * SF_DURATION;
+  slot_per_sf   = 1 << config.scs_common;
+  slot_len      = sf_len / slot_per_sf;
+  nof_sc        = config.nof_prb * SRSRAN_NRE;
+  nof_re        = nof_sc * SRSRAN_NSYMB_PER_SLOT_NR;
+  slot_duration = SF_DURATION / slot_per_sf;
+
+  /* Init buffer */
+  buffer = srsran_vec_cf_malloc(sf_len + config.front_padding + config.back_padding);
+  if (!buffer) {
+    logger.error("Error allocating buffer");
+    return false;
+  }
+
+  /* Init ue_ul instance */
+  if (!init_ue_ul(ue_ul, buffer + config.front_padding, phy_cfg)) {
+    logger.error("Error initializing ue_ul");
+    return false;
+  }
+
+  /* Initialize softbuffer tx */
+  if (srsran_softbuffer_tx_init_guru(&softbuffer_tx, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
+      SRSRAN_SUCCESS) {
+    logger.error("Error initializing softbuffer_tx");
+    return false;
+  }
+  return true;
+}
+
+/* Update the UE UL configurations */
+bool UEULWorker::update_cfg(srsran::phy_cfg_nr_t& phy_cfg_)
+{
+  std::lock_guard<std::mutex> lock(mutex);
+  phy_cfg = phy_cfg_;
+  if (!update_ue_ul(ue_ul, phy_cfg)) {
+    logger.error("Failed to update ue_ul with new phy_cfg");
+    return false;
+  }
+  return true;
+}
+
+/* Set the context of the UE UL worker */
+void UEULWorker::set_context(std::shared_ptr<ue_ul_task_t> task_)
+{
+  std::lock_guard<std::mutex> lock(mutex);
+  current_task = task_;
+}
+
+/* Set PUSCH grant */
+int UEULWorker::set_pusch_grant(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg)
+{
+  phy_state.set_ul_pending_grant(phy_cfg, slot_cfg, dci_ul);
+  std::lock_guard<std::mutex> lock(mutex);
+
+  srsran_sch_cfg_nr_t pusch_cfg = {};
+  if (not phy_cfg.get_pusch_cfg(slot_cfg, dci_ul, pusch_cfg)) {
+    logger.error("Error computing PUSCH configuration");
+    return -1;
+  }
+  uint32_t target_slot_idx = TTI_ADD(slot_cfg.idx, pusch_cfg.grant.k);
+  target_slots_queue.push(std::make_shared<uint32_t>(target_slot_idx));
+  grant_available += 1;
+  logger.debug("Set PUSCH grant for slot %d, target slot %d", slot_cfg.idx, target_slot_idx);
+  cv.notify_one();
+  return target_slot_idx;
+}
+
+/* Set RAR grant */
+void UEULWorker::set_ue_rar_grant(uint16_t                                                        rnti,
+                                  srsran_rnti_type_t                                              rnti_type,
+                                  std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS>& rar_grant,
+                                  uint32_t                                                        slot_idx)
+{
+  uint32_t grant_k = 0;
+  if (!set_rar_grant(rnti, rnti_type, slot_idx, rar_grant, phy_cfg, phy_state, &grant_k, logger)) {
+    logger.error("Failed to set RAR grant for RNTI: %u", rnti);
+    return;
+  }
+  std::lock_guard<std::mutex> lock(mutex);
+  uint32_t                    target_slot_idx = TTI_ADD(slot_idx, grant_k);
+  target_slots_queue.push(std::make_shared<uint32_t>(target_slot_idx));
+  logger.debug("Set RAR grant for at slot %u target slot %d", slot_idx, target_slot_idx);
+  grant_available += 1;
+  cv.notify_one();
+  return;
+}
+
+void UEULWorker::send_pusch(srsran_slot_cfg_t&                      slot_cfg,
+                            std::shared_ptr<std::vector<uint8_t> >& pusch_payload,
+                            srsran_sch_cfg_nr_t&                    pusch_cfg,
+                            uint32_t                                rx_slot_idx,
+                            srsran_timestamp_t&                     rx_timestamp)
+{
+  // Setup frequency offset
+  srsran_ue_ul_nr_set_freq_offset(&ue_ul, phy_state.get_ul_cfo());
+  pusch_cfg.grant.tb->softbuffer.tx = &softbuffer_tx;
+  srsran_softbuffer_tx_reset(&softbuffer_tx);
+
+  // Initialize PUSCH data
+  srsran_pusch_data_nr_t pusch_data      = {};
+  uint32_t               number_of_bytes = pusch_cfg.grant.tb->nof_bits / 8;
+  pusch_data.payload[0]                  = srsran_vec_u8_malloc(number_of_bytes);
+  memset(pusch_data.payload[0], 0, number_of_bytes);
+  uint32_t pusch_data_len = pusch_payload->size();
+  if (pusch_data_len > number_of_bytes) {
+    pusch_data_len = number_of_bytes;
+  }
+  memcpy(pusch_data.payload[0], pusch_payload->data(), pusch_data_len);
+
+  // encode PUSCH
+  if (srsran_ue_ul_nr_encode_pusch(&ue_ul, &slot_cfg, &pusch_cfg, &pusch_data) != SRSRAN_SUCCESS) {
+    logger.error("Failed to encode PUSCH");
+    free(pusch_data.payload[0]);
+    return;
+  }
+  logger.info("Encoded PUSCH for slot %u", slot_cfg.idx);
+
+  // Calculate the timestamp to send out the message
+  srsran_timestamp_t tx_timestamp = {};
+  srsran_timestamp_copy(&tx_timestamp, &rx_timestamp);
+  srsran_timestamp_add(&tx_timestamp,
+                       0,
+                       (slot_cfg.idx - rx_slot_idx) * slot_duration -
+                           (config.ul_advancement + config.front_padding) / config.sample_rate);
+  cf_t* sdr_buffer[SRSRAN_MAX_PORTS] = {};
+  for (uint32_t ch = 0; ch < config.nof_channels; ch++) {
+    sdr_buffer[ch] = nullptr;
+  }
+  sdr_buffer[config.ul_channel] = buffer;
+  source->send(sdr_buffer, slot_len + config.front_padding + config.back_padding, tx_timestamp, slot_cfg.idx);
+  logger.info("Sent PUSCH at slot %u (%lu.%f)", slot_cfg.idx, tx_timestamp.full_secs, tx_timestamp.frac_secs);
+  injected_count += 1;
+}
+
+void UEULWorker::run_thread()
+{
+  running.store(true);
+  while (running.load()) {
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [this] { return grant_available || !running.load(); });
+    uint32_t                  pid         = 0;
+    srsran_sch_cfg_nr_t       pusch_cfg   = {};
+    std::shared_ptr<uint32_t> target_slot = target_slots_queue.retrieve_non_blocking();
+    if (!target_slot) {
+      continue;
+    }
+    uint32_t          target_slot_idx = *target_slot;
+    srsran_slot_cfg_t slot_cfg        = {.idx = target_slot_idx};
+    bool              has_pusch_grant = phy_state.get_ul_pending_grant(slot_cfg.idx, pusch_cfg, pid);
+    if (!running.load()) {
+      logger.info("UE UL Worker stopping");
+      break;
+    }
+    if (!has_pusch_grant) {
+      continue;
+    }
+    if (current_task == nullptr) {
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
+      continue;
+    }
+    if (target_slot_idx < current_task->rx_slot_idx + 2) {
+      logger.debug("Target slot %d is too close to rx slot %d, skipping", target_slot_idx, current_task->rx_slot_idx);
+      continue;
+    }
+    grant_available -= 1;
+    send_pusch(slot_cfg, current_task->msg, pusch_cfg, current_task->rx_slot_idx, current_task->rx_timestamp);
+    if (injected_count > config.duplications) {
+      current_task = nullptr;
+      injected_count.store(0);
+    }
+  }
+}

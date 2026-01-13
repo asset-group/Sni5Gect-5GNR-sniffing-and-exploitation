@@ -24,12 +24,8 @@ UETracker::UETracker(Source*           source_,
   init_phy_cfg(phy_cfg, config);
 
   /* Initialize phy_state */
-  phy_state.stack                 = nullptr;
-  phy_state.args.nof_carriers     = 1;
-  phy_state.args.dl.nof_max_prb   = config.nof_prb;
-  phy_state.args.dl.pdsch.max_prb = config.nof_prb;
-  phy_state.args.ul.nof_max_prb   = config.nof_prb;
-  phy_state.args.ul.pusch.max_prb = config.nof_prb;
+  init_phy_state(phy_state, config.nof_prb);
+  init_phy_state(ul_phy_state, config.nof_prb);
 
   /* Create the exploit */
   exploit = exploit_creator(dl_msg_queue, ul_msg_queue);
@@ -47,10 +43,9 @@ UETracker::~UETracker()
 /* Activate the current UETracker */
 void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t time_advance)
 {
-  rnti      = rnti_;
-  rnti_type = rnti_type_;
-  name      = "UE-" + std::to_string(rnti);
-
+  rnti             = rnti_;
+  rnti_type        = rnti_type_;
+  name             = "UE-" + std::to_string(rnti);
   n_timing_advance = time_advance * 16 * 64 / (1 << config.scs_common) + phy_cfg.t_offset;
   ta_time          = static_cast<double>(n_timing_advance) * Tc;
 
@@ -70,20 +65,29 @@ void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t
   if (pcap_writer->open(config.pcap_folder + name + ".pcap")) {
     logger.error("Failed to open pcap file");
   }
+  active.store(true);
+  exploit->reset();
+
   /* Update last received message timestamp */
   last_message_time = std::chrono::steady_clock::now();
   /* Initialize the gnb_dl thread */
   start(3); // Between Syncer and Scheduler
-  active = true;
+  /* Start the UE UL worker thread */
+  if (ue_ul_worker) {
+    ue_ul_worker->begin();
+    ue_ul_worker->start(0);
+  }
   logger.info(GREEN "UETracker %s activated" RESET, name.c_str());
 }
 
 /* Deactivate the current UETracker */
 void UETracker::deactivate()
 {
-  active = false;
+  active.store(false);
   /* If the gnb dl thread is still active, then stop the thread */
   thread_cancel();
+  ue_ul_worker->stop();
+  ue_ul_worker->thread_cancel();
   pcap_writer->close();
   logger.info("Deactivated UETracker %s", name.c_str());
   logger.info("Capture saved to: %s", config.pcap_folder + name + ".pcap");
@@ -99,6 +103,14 @@ void UETracker::update_timing_advance(int32_t ta_command)
     GNBULWorker* w = gnb_ul_workers[i];
     w->set_ta_samples(ta_time);
   }
+}
+
+int UETracker::on_dci_ul_found(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg)
+{
+  if (ue_ul_worker) {
+    return ue_ul_worker->set_pusch_grant(dci_ul, slot_cfg);
+  }
+  return -1;
 }
 
 bool UETracker::init()
@@ -119,8 +131,19 @@ bool UETracker::init()
     w->apply_cell_group_cfg = std::bind(&UETracker::apply_config_from_rrc_setup, this, std::placeholders::_1);
     /* Update the corresponding RX timestamp */
     w->update_rx_timestamp = std::bind(&UETracker::update_last_rx_timestamp, this);
+    /* Bind the DCI UL found call back */
+    w->on_dci_ul_found = std::bind(&UETracker::on_dci_ul_found, this, std::placeholders::_1, std::placeholders::_2);
     /* Initialize ue_dl worker in the work pool */
     ue_dl_pool.init_worker(i, w, 80);
+  }
+
+  /* Initialize the ue ul worker first and then bind the call back on the ue_ul worker */
+  ue_ul_worker = new UEULWorker(logger, config, source, ul_phy_state);
+  if (!ue_ul_worker->init(phy_cfg)) {
+    return false;
+  }
+  if (!ue_ul_worker->update_cfg(phy_cfg)) {
+    return false;
   }
 
   /* Initialize the gnb ul workers and add them to the worker pool */
@@ -267,6 +290,13 @@ bool UETracker::update_cfg()
       ret = false;
     }
   }
+  /* Apply the phy_cfg to ue_ul */
+  if (ue_ul_worker) {
+    if (!ue_ul_worker->update_cfg(phy_cfg)) {
+      logger.error("Failed to update ue_ul with new phy_cfg");
+      ret = false;
+    }
+  }
   return ret;
 }
 
@@ -274,9 +304,11 @@ bool UETracker::update_cfg()
 void UETracker::set_ue_rar_grant(std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS>& grant,
                                  uint32_t                                                        slot_idx)
 {
-  if (!set_rar_grant(rnti, rnti_type, slot_idx, grant, phy_cfg, phy_state, logger)) {
+  uint32_t grant_k = 0;
+  if (!set_rar_grant(rnti, rnti_type, slot_idx, grant, phy_cfg, phy_state, &grant_k, logger)) {
     logger.error("Failed to set RAR grant for UE: %u", rnti);
   }
+  ue_ul_worker->set_ue_rar_grant(rnti, rnti_type, grant, slot_idx);
 }
 
 /* GNB DL thread implementation, keep retrieve task from the queue and run the task */
@@ -288,7 +320,25 @@ void UETracker::run_thread()
   uint32_t epoch_count = 0;
   /* Track last sent slot number, prevent sending the message in the same slot */
   uint32_t last_sent_slot = 0;
-  while (active) {
+  while (active.load()) {
+    /* Retrieve the current tracking rx slot index and timestamp*/
+    uint32_t           rx_slot_idx;
+    srsran_timestamp_t rx_timestamp;
+    syncer->get_tti(&rx_slot_idx, &rx_timestamp);
+
+    std::shared_ptr<std::vector<uint8_t> > ul_new_msg = ul_msg_queue.retrieve_non_blocking();
+    if (ul_new_msg != nullptr) {
+      /* If retrieved new message from the queue is not none, then set the context of ue_ul_worker */
+      std::shared_ptr<UEULWorker::ue_ul_task_t> ul_task_ptr = std::make_shared<UEULWorker::ue_ul_task_t>();
+      ul_task_ptr->rnti                                     = rnti;
+      ul_task_ptr->rnti_type                                = rnti_type;
+      ul_task_ptr->rx_slot_idx                              = rx_slot_idx;
+      ul_task_ptr->rx_timestamp                             = rx_timestamp;
+      ul_task_ptr->msg                                      = ul_new_msg;
+      ue_ul_worker->set_context(ul_task_ptr);
+      logger.debug("Setting new ul task for RNTI: %u, size: %zu", rnti, ul_new_msg->size());
+    }
+
     std::shared_ptr<std::vector<uint8_t> > new_msg = dl_msg_queue.retrieve_non_blocking();
     /* If retrieved new message from the queue is not none, then update current message */
     if (new_msg != nullptr && !new_msg->empty()) {
@@ -301,10 +351,7 @@ void UETracker::run_thread()
       if (epoch_count >= config.duplications) {
         current_msg = nullptr;
       }
-      /* Retrieve the current tracking rx slot index and timestamp*/
-      uint32_t           rx_slot_idx;
-      srsran_timestamp_t rx_timestamp;
-      syncer->get_tti(&rx_slot_idx, &rx_timestamp);
+
       /* If we have sent the pdsch in the slot, then skip */
       if (phy_cfg.duplex.mode == srsran_duplex_mode_t::SRSRAN_DUPLEX_MODE_FDD && rx_slot_idx <= (last_sent_slot + 1)) {
         continue;

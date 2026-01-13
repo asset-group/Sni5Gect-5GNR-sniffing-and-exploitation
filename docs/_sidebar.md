@@ -11,5 +11,6 @@
     - [Fingerprinting: Identity Request](identity_request.md)
     - [Authentication Bypass: Registration Accept](registration_accept.md)
     - [Custom Exploit Module](modules.md)
+- [Testcases](testcases.md)
 - [Cite](cite.md)
 - [Disclaimer](disclaimer.md)

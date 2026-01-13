@@ -210,6 +210,7 @@ bool Syncer::run_cell_search()
     std::array<char, 512> mib_info_str = {};
     srsran_pbch_msg_nr_mib_info(&mib, mib_info_str.data(), (uint32_t)mib_info_str.size());
     logger.info(YELLOW "Found cell: %s" RESET, mib_info_str.data());
+    logger.debug("Cell Search CFO: %f", cs_result.measurements.cfo_hz);
     ncellid = cs_result.N_id;
 
     tracer_sib1.send(samples->dl_buffer[0]->data(), sf_len, true);

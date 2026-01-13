@@ -48,6 +48,11 @@ int main(int argc, char* argv[])
       half        = 0;
       rnti        = 21758;
       break;
+    case 6:
+      sample_file = "shadower/test/data/srsran-n5-10MHz/rrc_setup.fc32";
+      slot_number = 5;
+      half        = 0;
+      break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
       exit(EXIT_FAILURE);
@@ -103,8 +108,10 @@ int main(int argc, char* argv[])
   sprintf(filename, "rrc_setup_origin");
   write_record_to_file(buffer, args.slot_len, filename);
 
+  std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
+  std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
   /* search for dci */
-  ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, srsran_rnti_type_c, phy_state, logger, 0);
+  ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, rnti, srsran_rnti_type_c, phy_state, logger, 0, dci_dl, dci_ul);
 
   /* get grant from dci search */
   uint32_t                   pid          = 0;

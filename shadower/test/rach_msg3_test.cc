@@ -113,7 +113,9 @@ int main(int argc, char* argv[])
   }
 
   /* Add rar grant to phy_state */
-  if (!set_rar_grant(args.c_rnti, srsran_rnti_type_c, rach_msg2_slot_idx, ul_grant_raw, phy_cfg, phy_state, logger)) {
+  uint32_t grant_k = 0;
+  if (!set_rar_grant(
+          args.c_rnti, srsran_rnti_type_c, rach_msg2_slot_idx, ul_grant_raw, phy_cfg, phy_state, &grant_k, logger)) {
     logger.error("Failed to set RAR grant");
     return -1;
   }

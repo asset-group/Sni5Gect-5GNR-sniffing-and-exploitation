@@ -209,6 +209,7 @@ int parse_args(ShadowerConfig& config, int argc, char* argv[])
   config.duplications      = node_as<uint32_t>(injector, "duplications", 1);
   config.tx_cfo_correction = node_as<float>(injector, "tx_cfo_correction", 0);
   config.tx_advancement    = node_as<int32_t>(injector, "tx_advancement", 0);
+  config.ul_advancement    = node_as<uint32_t>(injector, "ul_advancement", 0); // in us
   config.pdsch_mcs         = node_as<uint32_t>(injector, "pdsch_mcs", 3);
   config.pdsch_prbs        = node_as<uint32_t>(injector, "pdsch_prbs", 24);
 

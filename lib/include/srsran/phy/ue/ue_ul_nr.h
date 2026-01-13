@@ -45,6 +45,7 @@ typedef struct SRSRAN_API {
   srsran_pucch_nr_args_t      pucch;
   uint32_t                    nof_max_prb;
   srsran_subcarrier_spacing_t scs;
+  double                      sample_rate_hz;
 } srsran_ue_ul_nr_args_t;
 
 typedef struct SRSRAN_API {

@@ -63,6 +63,13 @@ int main(int argc, char* argv[])
       slot_number = 17;
       half        = 0;
       break;
+    case 6:
+      // sample_file = "shadower/test/data/srsran-n5-10MHz/pdsch_10056.fc32";
+      // slot_number = 16;
+      sample_file = "shadower/test/data/srsran-n5-10MHz/pdsch_617.fc32";
+      slot_number = 17;
+      half        = 0;
+      break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
       exit(EXIT_FAILURE);
@@ -127,8 +134,10 @@ int main(int argc, char* argv[])
   sprintf(filename, "ofdm_pdsch_fft%u", args.nof_sc);
   write_record_to_file(ue_dl.sf_symbols[0], args.nof_re, filename);
 
+  std::array<srsran_dci_dl_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_dl = {};
+  std::array<srsran_dci_ul_nr_t, SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR> dci_ul = {};
   /* search for dci */
-  ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, args.c_rnti, srsran_rnti_type_c, phy_state, logger, 0);
+  ue_dl_dci_search(ue_dl, phy_cfg, slot_cfg, args.c_rnti, srsran_rnti_type_c, phy_state, logger, 0, dci_dl, dci_ul);
 
   /* get grant from dci search */
   uint32_t                   pid          = 0;
