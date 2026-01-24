@@ -317,6 +317,6 @@ int SSBCuda::ssb_run_sync_find(cf_t*                          buffer,
 
   // Add delay to measure
   meas->delay_us += ssb_delay_us;
-
+  meas->ssb_offset = t_offset - ssb.ssb_sz - ssb_offset;
   return SRSRAN_SUCCESS;
 }

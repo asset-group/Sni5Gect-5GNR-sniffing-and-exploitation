@@ -1365,6 +1365,8 @@ int srsran_ssb_search(srsran_ssb_t* q, const cf_t* in, uint32_t nof_samples, srs
   res->measurements = measurements;
   res->measurements.cfo_hz += coarse_cfo_hz;
 
+  uint32_t ssb_offset     = srsran_ssb_candidate_sf_offset(q, ssb_idx);
+  measurements.ssb_offset = t_offset - ssb_offset;
   return SRSRAN_SUCCESS;
 }
 
@@ -1519,6 +1521,7 @@ int srsran_ssb_find(srsran_ssb_t*                  q,
 
   // SSB delay in SF
   float ssb_delay_us = (float)(1e6 * (((double)t_offset - (double)q->ssb_sz - (double)ssb_offset) / q->cfg.srate_hz));
+  meas->ssb_offset   = t_offset - q->ssb_sz - ssb_offset;
 
   // Add delay to measure
   meas->delay_us += ssb_delay_us;
@@ -1566,6 +1569,8 @@ int srsran_ssb_track(srsran_ssb_t*                  q,
     return SRSRAN_ERROR;
   }
 
+  uint32_t ssb_offset = srsran_ssb_candidate_sf_offset(q, ssb_idx);
+  meas->ssb_offset    = t_offset - ssb_offset;
   return SRSRAN_SUCCESS;
 }
 
