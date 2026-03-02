@@ -689,6 +689,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
       type = "e3x0";
     } else if (find_string(devices_str, "type=n3xx")) {
       type = "n3xx";
+    } else if (find_string(devices_str, "type=x400")) {
+      type = "x400";
     }
 
     if (not type.empty()) {
@@ -709,6 +711,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
       mcr = "122.88e6";
     } else if (device_addr["type"] == "e3x0") {
       mcr = "30.72e6";
+    } else if (device_addr["type"] == "x400") {
+      mcr = "245.76e6";
     }
 
     device_addr.set("master_clock_rate", mcr);
@@ -783,6 +787,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
       handler->devname = DEVNAME_E3X0;
     } else if (device_addr["type"] == "b200") {
       handler->devname = DEVNAME_B200;
+    } else if (device_addr["type"] == "x400") {
+      handler->devname = DEVNAME_X400;
     }
   }
 
@@ -804,6 +810,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
       handler->devname = DEVNAME_X300;
     } else if (mboard_name.find("N3") != std::string::npos) {
       handler->devname = DEVNAME_N300;
+    } else if (mboard_name.find("X4") != std::string::npos) {
+      handler->devname = DEVNAME_X400;
     } else {
       handler->devname = DEVNAME_UNKNOWN;
     }
