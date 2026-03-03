@@ -21,6 +21,7 @@ public:
     uint16_t                               rnti;
     srsran_rnti_type_t                     rnti_type;
     uint32_t                               slot_idx;
+    uint32_t                               rx_task_idx;
     uint32_t                               rx_tti;
     srsran_timestamp_t                     rx_time;
     uint32_t                               mcs  = 0;

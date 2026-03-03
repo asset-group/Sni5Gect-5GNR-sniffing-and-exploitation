@@ -175,8 +175,9 @@ void sender_thread(srslog::basic_logger& logger,
     }
     /* Get the timestamp from syncer */
     uint32_t           slot_idx;
+    uint32_t           task_idx;
     srsran_timestamp_t ts;
-    syncer->get_tti(&slot_idx, &ts);
+    syncer->get_tti(&slot_idx, &task_idx, &ts);
     if (slot_idx % slot_per_frame != 2) {
       continue;
     }
