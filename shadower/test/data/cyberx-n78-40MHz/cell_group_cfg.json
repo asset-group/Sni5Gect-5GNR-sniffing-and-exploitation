@@ -1,0 +1,999 @@
+{
+  "c1": {
+    "rrcSetup": {
+      "rrc-TransactionIdentifier": 0,
+      "criticalExtensions": {
+        "rrcSetup": {
+          "radioBearerConfig": {
+            "srb-ToAddModList": [
+              {
+                "srb-Identity": 1
+              }
+            ]
+          },
+          "masterCellGroup": "5c00b001117afc701061e6007c0204683c42000410c980659c32ce3f7e2018001800004020dc500c00008020fc603000300000804000830a0e00ec000029c028806d00d6021b2a0123ffff0000000200075618ee3806000020106e40860000502ca40809440004080090100126046050361a90cc06431958be223065ce196654c0025ac4cd73d2c0093bc29b856f126e2cdc69b93372a6e5cda7a9800b335554940400121142c2e0002682140302680090a0188001a4b500c5004d0c283166800b0a0c4808cec28204843024823a2b3c000152100212c8e924850383043b785370ade24dc59b8d37266e54dcb9bc7feb599ad6b7940e0000102f7a00000080007a800004e54140180aa8a008c00456a800a80401b283810086200070080340005c0c0451000380401a0002e0802188001c0200d008170501144000e01006804082000000a1860406080b0382e800a9650000000200400180900660b800600b4000164900224f17fff841fe0280"
+        }
+      }
+    }
+  }
+},
+{
+  "cellGroupId": 0,
+  "rlc-BearerToAddModList": [
+    {
+      "logicalChannelIdentity": 1,
+      "servedRadioBearer": {
+        "srb-Identity": 1
+      },
+      "rlc-Config": {
+        "am": {
+          "ul-AM-RLC": {
+            "sn-FieldLength": "size12",
+            "t-PollRetransmit": "ms45",
+            "pollPDU": "infinity",
+            "pollByte": "infinity",
+            "maxRetxThreshold": "t32"
+          },
+          "dl-AM-RLC": {
+            "sn-FieldLength": "size12",
+            "t-Reassembly": "ms35",
+            "t-StatusProhibit": "ms0"
+          }
+        }
+      },
+      "mac-LogicalChannelConfig": {
+        "ul-SpecificParameters": {
+          "priority": 1,
+          "prioritisedBitRate": "infinity",
+          "bucketSizeDuration": "ms50",
+          "logicalChannelGroup": 0,
+          "schedulingRequestID": 0,
+          "logicalChannelSR-Mask": false,
+          "logicalChannelSR-DelayTimerApplied": false
+        }
+      }
+    }
+  ],
+  "mac-CellGroupConfig": {
+    "schedulingRequestConfig": {
+      "schedulingRequestToAddModList": [
+        {
+          "schedulingRequestId": 0,
+          "sr-TransMax": "n64"
+        }
+      ]
+    },
+    "bsr-Config": {
+      "periodicBSR-Timer": "sf10",
+      "retxBSR-Timer": "sf80"
+    },
+    "tag-Config": {
+      "tag-ToAddModList": [
+        {
+          "tag-Id": 0,
+          "timeAlignmentTimer": "infinity"
+        }
+      ]
+    },
+    "phr-Config": {
+      {
+        "phr-PeriodicTimer": "sf20",
+        "phr-ProhibitTimer": "sf0",
+        "phr-Tx-PowerFactorChange": "dB3",
+        "multiplePHR": false,
+        "dummy": false,
+        "phr-Type2OtherCell": false,
+        "phr-ModeOtherCG": "real"
+      }
+    },
+    "skipUplinkTxDynamic": false
+  },
+  "physicalCellGroupConfig": {
+    "pdsch-HARQ-ACK-Codebook": "dynamic"
+  },
+  "spCellConfig": {
+    "spCellConfigDedicated": {
+      "downlinkBWP-ToAddModList": [
+        {
+          "bwp-Id": 1,
+          "bwp-Common": {
+            "genericParameters": {
+              "locationAndBandwidth": 28875,
+              "subcarrierSpacing": "kHz30"
+            },
+            "pdcch-ConfigCommon": {
+              {
+                "commonSearchSpaceList": [
+                  {
+                    "searchSpaceId": 4,
+                    "controlResourceSetId": 0,
+                    "monitoringSlotPeriodicityAndOffset": {
+                      "sl5": 0
+                    },
+                    "duration": 3,
+                    "monitoringSymbolsWithinSlot": "10000000000000",
+                    "nrofCandidates": {
+                      "aggregationLevel1": "n0",
+                      "aggregationLevel2": "n0",
+                      "aggregationLevel4": "n2",
+                      "aggregationLevel8": "n0",
+                      "aggregationLevel16": "n0"
+                    },
+                    "searchSpaceType": {
+                      "common": {
+                        "dci-Format0-0-AndFormat1-0": {
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "searchSpaceId": 5,
+                    "controlResourceSetId": 0,
+                    "monitoringSlotPeriodicityAndOffset": {
+                    },
+                    "monitoringSymbolsWithinSlot": "11000000000000",
+                    "nrofCandidates": {
+                      "aggregationLevel1": "n0",
+                      "aggregationLevel2": "n0",
+                      "aggregationLevel4": "n4",
+                      "aggregationLevel8": "n0",
+                      "aggregationLevel16": "n0"
+                    },
+                    "searchSpaceType": {
+                      "common": {
+                        "dci-Format0-0-AndFormat1-0": {
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "searchSpaceId": 6,
+                    "controlResourceSetId": 0,
+                    "monitoringSlotPeriodicityAndOffset": {
+                      "sl5": 0
+                    },
+                    "duration": 3,
+                    "monitoringSymbolsWithinSlot": "10000000000000",
+                    "nrofCandidates": {
+                      "aggregationLevel1": "n0",
+                      "aggregationLevel2": "n0",
+                      "aggregationLevel4": "n2",
+                      "aggregationLevel8": "n0",
+                      "aggregationLevel16": "n0"
+                    },
+                    "searchSpaceType": {
+                      "common": {
+                        "dci-Format0-0-AndFormat1-0": {
+                        }
+                      }
+                    }
+                  }
+                ],
+                "searchSpaceSIB1": 0,
+                "searchSpaceOtherSystemInformation": 4,
+                "pagingSearchSpace": 6,
+                "ra-SearchSpace": 5,
+                "firstPDCCH-MonitoringOccasionOfPO": {
+                  "sCS120KHZoneT-SCS60KHZhalfT-SCS30KHZquarterT-SCS15KHZoneEighthT": [
+                    0
+                  ]
+                }
+              }
+            },
+            "pdsch-ConfigCommon": {
+              {
+                "pdsch-TimeDomainAllocationList": [
+                  {
+                    "k0": 0,
+                    "mappingType": "typeA",
+                    "startSymbolAndLength": 40
+                  },
+                  {
+                    "k0": 0,
+                    "mappingType": "typeA",
+                    "startSymbolAndLength": 54
+                  },
+                  {
+                    "k0": 0,
+                    "mappingType": "typeA",
+                    "startSymbolAndLength": 53
+                  },
+                  {
+                    "k0": 0,
+                    "mappingType": "typeA",
+                    "startSymbolAndLength": 67
+                  }
+                ]
+              }
+            }
+          },
+          "bwp-Dedicated": {
+            "pdcch-Config": {
+              {
+                "controlResourceSetToAddModList": [
+                  {
+                    "controlResourceSetId": 1,
+                    "frequencyDomainResources": "111111111111111110000000000000000000000000000",
+                    "duration": 1,
+                    "cce-REG-MappingType": {
+                    },
+                    "precoderGranularity": "sameAsREG-bundle",
+                    "tci-StatesPDCCH-ToAddList": [
+                      0
+                    ],
+                    "pdcch-DMRS-ScramblingID": 60099
+                  }
+                ],
+                "searchSpacesToAddModList": [
+                  {
+                    "searchSpaceId": 7,
+                    "controlResourceSetId": 0,
+                    "monitoringSlotPeriodicityAndOffset": {
+                    },
+                    "monitoringSymbolsWithinSlot": "11000000000000",
+                    "nrofCandidates": {
+                      "aggregationLevel1": "n0",
+                      "aggregationLevel2": "n0",
+                      "aggregationLevel4": "n2",
+                      "aggregationLevel8": "n0",
+                      "aggregationLevel16": "n0"
+                    },
+                    "searchSpaceType": {
+                      "common": {
+                        "dci-Format0-0-AndFormat1-0": {
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "searchSpaceId": 8,
+                    "controlResourceSetId": 1,
+                    "monitoringSlotPeriodicityAndOffset": {
+                    },
+                    "monitoringSymbolsWithinSlot": "11000000000000",
+                    "nrofCandidates": {
+                      "aggregationLevel1": "n0",
+                      "aggregationLevel2": "n0",
+                      "aggregationLevel4": "n5",
+                      "aggregationLevel8": "n0",
+                      "aggregationLevel16": "n0"
+                    },
+                    "searchSpaceType": {
+                      "ue-Specific": {
+                        "dci-Formats": "formats0-1-And-1-1"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "pdsch-Config": {
+              {
+                "dmrs-DownlinkForPDSCH-MappingTypeA": {
+                  {
+                    "dmrs-AdditionalPosition": "pos1",
+                    "scramblingID0": 1
+                  }
+                },
+                "tci-StatesToAddModList": [
+                  {
+                    "tci-StateId": 0,
+                    "qcl-Type1": {
+                      "bwp-Id": 1,
+                      "referenceSignal": {
+                        "csi-rs": 2
+                      },
+                      "qcl-Type": "typeA"
+                    }
+                  },
+                  {
+                    "tci-StateId": 1,
+                    "qcl-Type1": {
+                      "bwp-Id": 1,
+                      "referenceSignal": {
+                        "ssb": 0
+                      },
+                      "qcl-Type": "typeC"
+                    }
+                  }
+                ],
+                "resourceAllocation": "resourceAllocationType0",
+                "pdsch-TimeDomainAllocationList": {
+                  [
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 40
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 54
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 53
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 67
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 96
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 100
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 99
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 86
+                    },
+                    {
+                      "mappingType": "typeA",
+                      "startSymbolAndLength": 95
+                    }
+                  ]
+                },
+                "rbg-Size": "config1",
+                "maxNrofCodeWordsScheduledByDCI": "n1",
+                "prb-BundlingType": {
+                  "staticBundling": {
+                    "bundleSize": "n4"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "firstActiveDownlinkBWP-Id": 1,
+      "uplinkConfig": {
+        "uplinkBWP-ToAddModList": [
+          {
+            "bwp-Id": 1,
+            "bwp-Common": {
+              "genericParameters": {
+                "locationAndBandwidth": 28875,
+                "subcarrierSpacing": "kHz30"
+              },
+              "rach-ConfigCommon": {
+                {
+                  "rach-ConfigGeneric": {
+                    "prach-ConfigurationIndex": 192,
+                    "msg1-FDM": "one",
+                    "msg1-FrequencyStart": 18,
+                    "zeroCorrelationZoneConfig": 13,
+                    "preambleReceivedTargetPower": -104,
+                    "preambleTransMax": "n10",
+                    "powerRampingStep": "dB2",
+                    "ra-ResponseWindow": "sl20"
+                  },
+                  "ssb-perRACH-OccasionAndCB-PreamblesPerSSB": {
+                    "one": "n40"
+                  },
+                  "ra-ContentionResolutionTimer": "sf64",
+                  "rsrp-ThresholdSSB": 37,
+                  "prach-RootSequenceIndex": {
+                    "l139": 0
+                  },
+                  "msg1-SubcarrierSpacing": "kHz30",
+                  "restrictedSetConfig": "unrestrictedSet"
+                }
+              },
+              "pusch-ConfigCommon": {
+                {
+                  "pusch-TimeDomainAllocationList": [
+                    {
+                      "k2": 2,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 27
+                    },
+                    {
+                      "k2": 2,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 55
+                    },
+                    {
+                      "k2": 4,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 27
+                    },
+                    {
+                      "k2": 5,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 27
+                    },
+                    {
+                      "k2": 6,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 27
+                    },
+                    {
+                      "k2": 9,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 27
+                    },
+                    {
+                      "k2": 10,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 27
+                    },
+                    {
+                      "k2": 11,
+                      "mappingType": "typeB",
+                      "startSymbolAndLength": 27
+                    }
+                  ],
+                  "msg3-DeltaPreamble": 1,
+                  "p0-NominalWithGrant": -80
+                }
+              },
+              "pucch-ConfigCommon": {
+                {
+                  "pucch-GroupHopping": "neither",
+                  "hoppingId": 1,
+                  "p0-nominal": -100
+                }
+              }
+            },
+            "bwp-Dedicated": {
+              "pucch-Config": {
+                {
+                  "resourceSetToAddModList": [
+                    {
+                      "pucch-ResourceSetId": 0,
+                      "resourceList": [
+                        0,
+                        1
+                      ]
+                    },
+                    {
+                      "pucch-ResourceSetId": 1,
+                      "resourceList": [
+                        10,
+                        11
+                      ]
+                    }
+                  ],
+                  "resourceToAddModList": [
+                    {
+                      "pucch-ResourceId": 0,
+                      "startingPRB": 1,
+                      "intraSlotFrequencyHopping": "enabled",
+                      "secondHopPRB": 104,
+                      "format": {
+                        "format1": {
+                          "initialCyclicShift": 0,
+                          "nrofSymbols": 14,
+                          "startingSymbolIndex": 0,
+                          "timeDomainOCC": 0
+                        }
+                      }
+                    },
+                    {
+                      "pucch-ResourceId": 1,
+                      "startingPRB": 104,
+                      "intraSlotFrequencyHopping": "enabled",
+                      "secondHopPRB": 1,
+                      "format": {
+                        "format1": {
+                          "initialCyclicShift": 0,
+                          "nrofSymbols": 14,
+                          "startingSymbolIndex": 0,
+                          "timeDomainOCC": 0
+                        }
+                      }
+                    },
+                    {
+                      "pucch-ResourceId": 8,
+                      "startingPRB": 0,
+                      "intraSlotFrequencyHopping": "enabled",
+                      "secondHopPRB": 105,
+                      "format": {
+                        "format1": {
+                          "initialCyclicShift": 6,
+                          "nrofSymbols": 14,
+                          "startingSymbolIndex": 0,
+                          "timeDomainOCC": 0
+                        }
+                      }
+                    },
+                    {
+                      "pucch-ResourceId": 10,
+                      "startingPRB": 1,
+                      "intraSlotFrequencyHopping": "enabled",
+                      "secondHopPRB": 104,
+                      "format": {
+                        "format3": {
+                          "nrofPRBs": 1,
+                          "nrofSymbols": 14,
+                          "startingSymbolIndex": 0
+                        }
+                      }
+                    },
+                    {
+                      "pucch-ResourceId": 11,
+                      "startingPRB": 104,
+                      "intraSlotFrequencyHopping": "enabled",
+                      "secondHopPRB": 1,
+                      "format": {
+                        "format3": {
+                          "nrofPRBs": 1,
+                          "nrofSymbols": 14,
+                          "startingSymbolIndex": 0
+                        }
+                      }
+                    },
+                    {
+                      "pucch-ResourceId": 9,
+                      "startingPRB": 2,
+                      "intraSlotFrequencyHopping": "enabled",
+                      "secondHopPRB": 103,
+                      "format": {
+                        "format3": {
+                          "nrofPRBs": 1,
+                          "nrofSymbols": 14,
+                          "startingSymbolIndex": 0
+                        }
+                      }
+                    }
+                  ],
+                  "format1": {
+                    {
+                    }
+                  },
+                  "format3": {
+                    {
+                      "maxCodeRate": "zeroDot25"
+                    }
+                  },
+                  "schedulingRequestResourceToAddModList": [
+                    {
+                      "schedulingRequestResourceId": 1,
+                      "schedulingRequestID": 0,
+                      "periodicityAndOffset": {
+                        "sl20": 4
+                      },
+                      "resource": 8
+                    }
+                  ],
+                  "dl-DataToUL-ACK": [
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    0,
+                    0,
+                    0
+                  ],
+                  "pucch-PowerControl": {
+                    "deltaF-PUCCH-f1": 0,
+                    "deltaF-PUCCH-f3": 0,
+                    "p0-Set": [
+                      {
+                        "p0-PUCCH-Id": 1,
+                        "p0-PUCCH-Value": 0
+                      }
+                    ]
+                  }
+                }
+              },
+              "pusch-Config": {
+                {
+                  "txConfig": "codebook",
+                  "dmrs-UplinkForPUSCH-MappingTypeB": {
+                    {
+                      "dmrs-AdditionalPosition": "pos1",
+                      "transformPrecodingDisabled": {
+                      }
+                    }
+                  },
+                  "pusch-PowerControl": {
+                    "msg3-Alpha": "alpha1",
+                    "p0-AlphaSets": [
+                      {
+                        "p0-PUSCH-AlphaSetId": 0,
+                        "p0": 0,
+                        "alpha": "alpha1"
+                      }
+                    ]
+                  },
+                  "resourceAllocation": "resourceAllocationType1",
+                  "pusch-TimeDomainAllocationList": {
+                    [
+                      {
+                        "k2": 2,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 27
+                      },
+                      {
+                        "k2": 2,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 55
+                      },
+                      {
+                        "k2": 4,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 27
+                      },
+                      {
+                        "k2": 5,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 27
+                      },
+                      {
+                        "k2": 6,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 27
+                      },
+                      {
+                        "k2": 9,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 27
+                      },
+                      {
+                        "k2": 10,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 27
+                      },
+                      {
+                        "k2": 11,
+                        "mappingType": "typeB",
+                        "startSymbolAndLength": 27
+                      }
+                    ]
+                  },
+                  "transformPrecoder": "disabled",
+                  "codebookSubset": "nonCoherent",
+                  "maxRank": 1,
+                  "uci-OnPUSCH": {
+                    {
+                      "betaOffsets": {
+                        "semiStatic": {
+                          "betaOffsetACK-Index1": 11,
+                          "betaOffsetACK-Index2": 11,
+                          "betaOffsetACK-Index3": 6,
+                          "betaOffsetCSI-Part1-Index1": 13,
+                          "betaOffsetCSI-Part1-Index2": 13,
+                          "betaOffsetCSI-Part2-Index1": 13,
+                          "betaOffsetCSI-Part2-Index2": 13
+                        }
+                      },
+                      "scaling": "f1"
+                    }
+                  }
+                }
+              },
+              "srs-Config": {
+                {
+                  "srs-ResourceSetToAddModList": [
+                    {
+                      "srs-ResourceSetId": 0,
+                      "srs-ResourceIdList": [
+                        0
+                      ],
+                      "resourceType": {
+                        "aperiodic": {
+                          "aperiodicSRS-ResourceTrigger": 1,
+                          "slotOffset": 2
+                        }
+                      },
+                      "usage": "codebook",
+                      "alpha": "alpha1",
+                      "p0": -80
+                    }
+                  ],
+                  "srs-ResourceToAddModList": [
+                    {
+                      "srs-ResourceId": 0,
+                      "nrofSRS-Ports": "port1",
+                      "transmissionComb": {
+                        "n2": {
+                          "combOffset-n2": 0,
+                          "cyclicShift-n2": 0
+                        }
+                      },
+                      "resourceMapping": {
+                        "startPosition": 1,
+                        "nrofSymbols": "n1",
+                        "repetitionFactor": "n1"
+                      },
+                      "freqDomainPosition": 0,
+                      "freqDomainShift": 15,
+                      "freqHopping": {
+                        "c-SRS": 20,
+                        "b-SRS": 0,
+                        "b-hop": 0
+                      },
+                      "groupOrSequenceHopping": "neither",
+                      "resourceType": {
+                        "aperiodic": {
+                        }
+                      },
+                      "sequenceId": 1
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "firstActiveUplinkBWP-Id": 1
+      },
+      "pdsch-ServingCellConfig": {
+        {
+          "nrofHARQ-ProcessesForPDSCH": "n16",
+          "maxMIMO-Layers": 1
+        }
+      },
+      "csi-MeasConfig": {
+        {
+          "nzp-CSI-RS-ResourceToAddModList": [
+            {
+              "nzp-CSI-RS-ResourceId": 0,
+              "resourceMapping": {
+                "frequencyDomainAllocation": {
+                  "row4": "001"
+                },
+                "nrofPorts": "p4",
+                "firstOFDMSymbolInTimeDomain": 13,
+                "cdm-Type": "fd-CDM2",
+                "density": {
+                },
+                "freqBand": {
+                  "startingRB": 0,
+                  "nrofRBs": 108
+                }
+              },
+              "powerControlOffset": -8,
+              "powerControlOffsetSS": "db0",
+              "scramblingID": 1,
+              "periodicityAndOffset": {
+                "slots320": 80
+              }
+            },
+            {
+              "nzp-CSI-RS-ResourceId": 2,
+              "resourceMapping": {
+                "frequencyDomainAllocation": {
+                  "row1": "0001"
+                },
+                "nrofPorts": "p1",
+                "firstOFDMSymbolInTimeDomain": 6,
+                "cdm-Type": "noCDM",
+                "density": {
+                },
+                "freqBand": {
+                  "startingRB": 0,
+                  "nrofRBs": 52
+                }
+              },
+              "powerControlOffset": -8,
+              "powerControlOffsetSS": "db0",
+              "scramblingID": 1,
+              "periodicityAndOffset": {
+                "slots160": 0
+              },
+              "qcl-InfoPeriodicCSI-RS": 1
+            },
+            {
+              "nzp-CSI-RS-ResourceId": 3,
+              "resourceMapping": {
+                "frequencyDomainAllocation": {
+                  "row1": "0001"
+                },
+                "nrofPorts": "p1",
+                "firstOFDMSymbolInTimeDomain": 10,
+                "cdm-Type": "noCDM",
+                "density": {
+                },
+                "freqBand": {
+                  "startingRB": 0,
+                  "nrofRBs": 52
+                }
+              },
+              "powerControlOffset": -8,
+              "powerControlOffsetSS": "db0",
+              "scramblingID": 1,
+              "periodicityAndOffset": {
+                "slots160": 0
+              },
+              "qcl-InfoPeriodicCSI-RS": 1
+            },
+            {
+              "nzp-CSI-RS-ResourceId": 4,
+              "resourceMapping": {
+                "frequencyDomainAllocation": {
+                  "row1": "0001"
+                },
+                "nrofPorts": "p1",
+                "firstOFDMSymbolInTimeDomain": 6,
+                "cdm-Type": "noCDM",
+                "density": {
+                },
+                "freqBand": {
+                  "startingRB": 0,
+                  "nrofRBs": 52
+                }
+              },
+              "powerControlOffset": -8,
+              "powerControlOffsetSS": "db0",
+              "scramblingID": 1,
+              "periodicityAndOffset": {
+                "slots160": 1
+              },
+              "qcl-InfoPeriodicCSI-RS": 1
+            },
+            {
+              "nzp-CSI-RS-ResourceId": 5,
+              "resourceMapping": {
+                "frequencyDomainAllocation": {
+                  "row1": "0001"
+                },
+                "nrofPorts": "p1",
+                "firstOFDMSymbolInTimeDomain": 10,
+                "cdm-Type": "noCDM",
+                "density": {
+                },
+                "freqBand": {
+                  "startingRB": 0,
+                  "nrofRBs": 52
+                }
+              },
+              "powerControlOffset": -8,
+              "powerControlOffsetSS": "db0",
+              "scramblingID": 1,
+              "periodicityAndOffset": {
+                "slots160": 1
+              },
+              "qcl-InfoPeriodicCSI-RS": 1
+            }
+          ],
+          "nzp-CSI-RS-ResourceSetToAddModList": [
+            {
+              "nzp-CSI-ResourceSetId": 0,
+              "nzp-CSI-RS-Resources": [
+                0
+              ]
+            },
+            {
+              "nzp-CSI-ResourceSetId": 3,
+              "nzp-CSI-RS-Resources": [
+                2,
+                3,
+                4,
+                5
+              ],
+              "repetition": "off",
+              "trs-Info": "true"
+            }
+          ],
+          "csi-IM-ResourceToAddModList": [
+            {
+              "csi-IM-ResourceId": 0,
+              "csi-IM-ResourceElementPattern": {
+                "pattern1": {
+                  "subcarrierLocation-p1": "s4",
+                  "symbolLocation-p1": 13
+                }
+              },
+              "freqBand": {
+                "startingRB": 0,
+                "nrofRBs": 108
+              },
+              "periodicityAndOffset": {
+                "slots320": 80
+              }
+            }
+          ],
+          "csi-IM-ResourceSetToAddModList": [
+            {
+              "csi-IM-ResourceSetId": 0,
+              "csi-IM-Resources": [
+                0
+              ]
+            }
+          ],
+          "csi-ResourceConfigToAddModList": [
+            {
+              "csi-ResourceConfigId": 0,
+              "csi-RS-ResourceSetList": {
+                "nzp-CSI-RS-SSB": {
+                  "nzp-CSI-RS-ResourceSetList": [
+                    0
+                  ]
+                }
+              },
+              "bwp-Id": 1,
+              "resourceType": "periodic"
+            },
+            {
+              "csi-ResourceConfigId": 2,
+              "csi-RS-ResourceSetList": {
+                "nzp-CSI-RS-SSB": {
+                  "nzp-CSI-RS-ResourceSetList": [
+                    3
+                  ]
+                }
+              },
+              "bwp-Id": 1,
+              "resourceType": "periodic"
+            },
+            {
+              "csi-ResourceConfigId": 11,
+              "csi-RS-ResourceSetList": {
+                "csi-IM-ResourceSetList": [
+                  0
+                ]
+              },
+              "bwp-Id": 1,
+              "resourceType": "periodic"
+            }
+          ],
+          "csi-ReportConfigToAddModList": [
+            {
+              "reportConfigId": 0,
+              "resourcesForChannelMeasurement": 0,
+              "csi-IM-ResourcesForInterference": 11,
+              "reportConfigType": {
+                "periodic": {
+                  "reportSlotConfig": {
+                    "slots320": 64
+                  },
+                  "pucch-CSI-ResourceList": [
+                    {
+                      "uplinkBandwidthPartId": 1,
+                      "pucch-Resource": 9
+                    }
+                  ]
+                }
+              },
+              "reportQuantity": {
+              },
+              "reportFreqConfiguration": {
+                "cqi-FormatIndicator": "widebandCQI",
+                "pmi-FormatIndicator": "widebandPMI",
+                "csi-ReportingBand": {
+                  "subbands14": "11111111111111"
+                }
+              },
+              "timeRestrictionForChannelMeasurements": "configured",
+              "timeRestrictionForInterferenceMeasurements": "configured",
+              "codebookConfig": {
+                "codebookType": {
+                  "type1": {
+                    "subType": {
+                      "typeI-SinglePanel": {
+                        "nrOfAntennaPorts": {
+                          "moreThanTwo": {
+                            "n1-n2": {
+                              "two-one-TypeI-SinglePanel-Restriction": "11111111"
+                            }
+                          }
+                        },
+                        "typeI-SinglePanel-ri-Restriction": "00000001"
+                      }
+                    },
+                    "codebookMode": 1
+                  }
+                }
+              },
+              "groupBasedBeamReporting": {
+                "disabled": {
+                }
+              },
+              "cqi-Table": "table1",
+              "subbandSize": "value1"
+            }
+          ]
+        }
+      },
+      "tag-Id": 0
+    }
+  }
+}
