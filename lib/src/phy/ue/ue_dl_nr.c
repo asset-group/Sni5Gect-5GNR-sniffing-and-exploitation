@@ -235,7 +235,8 @@ void srsran_ue_dl_nr_estimate_fft(srsran_ue_dl_nr_t* q, const srsran_slot_cfg_t*
 static int ue_dl_nr_find_dci_ncce(srsran_ue_dl_nr_t*     q,
                                   srsran_dci_msg_nr_t*   dci_msg,
                                   srsran_pdcch_nr_res_t* pdcch_res,
-                                  uint32_t               coreset_id)
+                                  uint32_t               coreset_id,
+                                  uint32_t               start_symbol)
 {
   // Select debug information
   srsran_ue_dl_nr_pdcch_info_t* pdcch_info = NULL;
@@ -293,7 +294,8 @@ static int ue_dl_nr_find_dci_ncce(srsran_ue_dl_nr_t*     q,
   }
 
   // Decode PDCCH
-  if (srsran_pdcch_nr_decode(&q->pdcch, q->sf_symbols[0], q->pdcch_ce, dci_msg, pdcch_res) < SRSRAN_SUCCESS) {
+  cf_t* grid = q->sf_symbols[0] + start_symbol * q->carrier.nof_prb * SRSRAN_NRE;
+  if (srsran_pdcch_nr_decode(&q->pdcch, grid, q->pdcch_ce, dci_msg, pdcch_res) < SRSRAN_SUCCESS) {
     ERROR("Error decoding PDCCH");
     return SRSRAN_ERROR;
   }
@@ -336,9 +338,6 @@ static int ue_dl_nr_find_dci_ss(srsran_ue_dl_nr_t*           q,
                                 uint16_t                     rnti,
                                 srsran_rnti_type_t           rnti_type)
 {
-  uint32_t dci_sizes[SRSRAN_DCI_NR_MAX_NOF_SIZES] = {};
-  uint32_t dci_sizes_count                        = 0;
-
   // Select CORESET
   uint32_t coreset_id = search_space->coreset_id;
   if (coreset_id >= SRSRAN_UE_DL_NR_MAX_NOF_CORESET || !q->cfg.coreset_present[coreset_id]) {
@@ -353,124 +352,143 @@ static int ue_dl_nr_find_dci_ss(srsran_ue_dl_nr_t*           q,
     return SRSRAN_ERROR;
   }
 
-  // Iterate all possible formats
-  for (uint32_t format_idx = 0; format_idx < SRSRAN_MIN(search_space->nof_formats, SRSRAN_DCI_FORMAT_NR_COUNT);
-       format_idx++) {
-    srsran_dci_format_nr_t dci_format = search_space->formats[format_idx];
-
-    // Calculate number of DCI bits
-    uint32_t dci_nof_bits = srsran_dci_nr_size(&q->dci, search_space->type, dci_format);
-    if (dci_nof_bits == 0) {
-      ERROR("Error DCI size");
-      return SRSRAN_ERROR;
-    }
-
-    // Skip DCI format if the size was already searched for the search space
-    bool skip = false;
-    for (uint32_t i = 0; i < dci_sizes_count && !skip; i++) {
-      if (dci_nof_bits == dci_sizes[i]) {
-        skip = true;
-      }
-    }
-    if (skip) {
+  uint16_t monitoring_symbol_within_slot = 1;
+  if (search_space->monitoring_symbols_within_slot_present) {
+    monitoring_symbol_within_slot = search_space->monitoring_symbols_within_slot;
+  }
+  for (uint32_t start_sym = 0; start_sym < 14; start_sym++) {
+    // If not the expected monitoring symbol start or the start + coreset duration exceeds the slot boundary
+    if (!((monitoring_symbol_within_slot >> start_sym) & 1) || ((coreset->duration + start_sym) > 14) ||
+        ((search_space->duration + start_sym) > 14)) {
       continue;
     }
 
-    // Append size
-    if (dci_sizes_count >= SRSRAN_DCI_NR_MAX_NOF_SIZES) {
-      ERROR("Exceed maximum number of DCI sizes");
-      return SRSRAN_ERROR;
-    }
-    dci_sizes[dci_sizes_count++] = dci_nof_bits;
+    // Run PDCCH dmrs estimation
+    srsran_dmrs_pdcch_estimate(&q->dmrs_pdcch[coreset_id], slot_cfg, q->sf_symbols[0], start_sym);
 
-    // Iterate all possible aggregation levels
-    for (uint32_t L = 0;
-         L < SRSRAN_SEARCH_SPACE_NOF_AGGREGATION_LEVELS_NR && q->dl_dci_msg_count < SRSRAN_MAX_DCI_MSG_NR;
-         L++) {
-      // Calculate possible PDCCH DCI candidates
-      uint32_t candidates[SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR] = {};
-      int      nof_candidates                                        = srsran_pdcch_nr_locations_coreset(
-                                                      coreset, search_space, rnti, L, SRSRAN_SLOT_NR_MOD(q->carrier.scs, slot_cfg->idx), candidates);
-      if (nof_candidates < SRSRAN_SUCCESS) {
-        ERROR("Error calculating DCI candidate location");
+    uint32_t dci_sizes[SRSRAN_DCI_NR_MAX_NOF_SIZES] = {};
+    uint32_t dci_sizes_count                        = 0;
+
+    // Iterate all possible formats
+    for (uint32_t format_idx = 0; format_idx < SRSRAN_MIN(search_space->nof_formats, SRSRAN_DCI_FORMAT_NR_COUNT);
+         format_idx++) {
+      srsran_dci_format_nr_t dci_format = search_space->formats[format_idx];
+
+      // Calculate number of DCI bits
+      uint32_t dci_nof_bits = srsran_dci_nr_size(&q->dci, search_space->type, dci_format);
+      if (dci_nof_bits == 0) {
+        ERROR("Error DCI size");
         return SRSRAN_ERROR;
       }
 
-      // Iterate over the candidates
-      for (int ncce_idx = 0; ncce_idx < nof_candidates && q->dl_dci_msg_count < SRSRAN_MAX_DCI_MSG_NR; ncce_idx++) {
-        // Build DCI context
-        srsran_dci_ctx_t ctx = {};
-        ctx.location.L       = L;
-        ctx.location.ncce    = candidates[ncce_idx];
-        ctx.ss_type          = search_space->type;
-        ctx.coreset_id       = search_space->coreset_id;
-        ctx.coreset_start_rb = srsran_coreset_start_rb(&q->cfg.coreset[search_space->coreset_id]);
-        ctx.rnti_type        = rnti_type;
-        ctx.rnti             = rnti;
-        ctx.format           = dci_format;
+      // Skip DCI format if the size was already searched for the search space
+      bool skip = false;
+      for (uint32_t i = 0; i < dci_sizes_count && !skip; i++) {
+        if (dci_nof_bits == dci_sizes[i]) {
+          skip = true;
+        }
+      }
+      if (skip) {
+        continue;
+      }
 
-        // Build DCI message
-        srsran_dci_msg_nr_t dci_msg = {};
-        dci_msg.ctx                 = ctx;
-        dci_msg.nof_bits            = (uint32_t)dci_nof_bits;
+      // Append size
+      if (dci_sizes_count >= SRSRAN_DCI_NR_MAX_NOF_SIZES) {
+        ERROR("Exceed maximum number of DCI sizes");
+        return SRSRAN_ERROR;
+      }
+      dci_sizes[dci_sizes_count++] = dci_nof_bits;
 
-        // Find and decode PDCCH transmission in the given ncce
-        srsran_pdcch_nr_res_t res = {};
-        if (ue_dl_nr_find_dci_ncce(q, &dci_msg, &res, coreset_id) < SRSRAN_SUCCESS) {
+      // Iterate all possible aggregation levels
+      for (uint32_t L = 0;
+           L < SRSRAN_SEARCH_SPACE_NOF_AGGREGATION_LEVELS_NR && q->dl_dci_msg_count < SRSRAN_MAX_DCI_MSG_NR;
+           L++) {
+        // Calculate possible PDCCH DCI candidates
+        uint32_t candidates[SRSRAN_SEARCH_SPACE_MAX_NOF_CANDIDATES_NR] = {};
+        int      nof_candidates                                        = srsran_pdcch_nr_locations_coreset(
+            coreset, search_space, rnti, L, SRSRAN_SLOT_NR_MOD(q->carrier.scs, slot_cfg->idx), candidates);
+        if (nof_candidates < SRSRAN_SUCCESS) {
+          ERROR("Error calculating DCI candidate location");
           return SRSRAN_ERROR;
         }
 
-        // If the CRC was not match, move to next candidate
-        if (!res.crc) {
-          continue;
-        }
+        // Iterate over the candidates
+        for (int ncce_idx = 0; ncce_idx < nof_candidates && q->dl_dci_msg_count < SRSRAN_MAX_DCI_MSG_NR; ncce_idx++) {
+          // Build DCI context
+          srsran_dci_ctx_t ctx = {};
+          ctx.location.L       = L;
+          ctx.location.ncce    = candidates[ncce_idx];
+          ctx.ss_type          = search_space->type;
+          ctx.coreset_id       = search_space->coreset_id;
+          ctx.coreset_start_rb = srsran_coreset_start_rb(&q->cfg.coreset[search_space->coreset_id]);
+          ctx.rnti_type        = rnti_type;
+          ctx.rnti             = rnti;
+          ctx.format           = dci_format;
+          ctx.start_symbol     = start_sym;
 
-        // Detect if the DCI is the right direction
-        if (!srsran_dci_nr_valid_direction(&dci_msg)) {
-          // Change grant format direction
-          switch (dci_msg.ctx.format) {
-            case srsran_dci_format_nr_0_0:
-              dci_msg.ctx.format = srsran_dci_format_nr_1_0;
-              break;
-            case srsran_dci_format_nr_0_1:
-              dci_msg.ctx.format = srsran_dci_format_nr_1_1;
-              break;
-            case srsran_dci_format_nr_1_0:
-              dci_msg.ctx.format = srsran_dci_format_nr_0_0;
-              break;
-            case srsran_dci_format_nr_1_1:
-              dci_msg.ctx.format = srsran_dci_format_nr_0_1;
-              break;
-            default:
-              continue;
+          // Build DCI message
+          srsran_dci_msg_nr_t dci_msg = {};
+          dci_msg.ctx                 = ctx;
+          dci_msg.nof_bits            = (uint32_t)dci_nof_bits;
+
+          // Find and decode PDCCH transmission in the given ncce
+          srsran_pdcch_nr_res_t res = {};
+          if (ue_dl_nr_find_dci_ncce(q, &dci_msg, &res, coreset_id, start_sym) < SRSRAN_SUCCESS) {
+            return SRSRAN_ERROR;
           }
-        }
 
-        // If UL grant, enqueue in UL list
-        if (dci_msg.ctx.format == srsran_dci_format_nr_0_0 || dci_msg.ctx.format == srsran_dci_format_nr_0_1) {
-          // If the pending UL grant list is full or has the dci message, keep moving
-          if (q->ul_dci_count >= SRSRAN_MAX_DCI_MSG_NR || find_dci_msg(q->ul_dci_msg, q->ul_dci_count, &dci_msg)) {
+          // If the CRC was not match, move to next candidate
+          if (!res.crc) {
             continue;
           }
 
-          // Save the grant in the pending UL grant list
-          q->ul_dci_msg[q->ul_dci_count] = dci_msg;
-          q->ul_dci_count++;
+          // Detect if the DCI is the right direction
+          if (!srsran_dci_nr_valid_direction(&dci_msg)) {
+            // Change grant format direction
+            switch (dci_msg.ctx.format) {
+              case srsran_dci_format_nr_0_0:
+                dci_msg.ctx.format = srsran_dci_format_nr_1_0;
+                break;
+              case srsran_dci_format_nr_0_1:
+                dci_msg.ctx.format = srsran_dci_format_nr_1_1;
+                break;
+              case srsran_dci_format_nr_1_0:
+                dci_msg.ctx.format = srsran_dci_format_nr_0_0;
+                break;
+              case srsran_dci_format_nr_1_1:
+                dci_msg.ctx.format = srsran_dci_format_nr_0_1;
+                break;
+              default:
+                continue;
+            }
+          }
 
-          // Move to next candidate
-          continue;
+          // If UL grant, enqueue in UL list
+          if (dci_msg.ctx.format == srsran_dci_format_nr_0_0 || dci_msg.ctx.format == srsran_dci_format_nr_0_1) {
+            // If the pending UL grant list is full or has the dci message, keep moving
+            if (q->ul_dci_count >= SRSRAN_MAX_DCI_MSG_NR || find_dci_msg(q->ul_dci_msg, q->ul_dci_count, &dci_msg)) {
+              continue;
+            }
+
+            // Save the grant in the pending UL grant list
+            q->ul_dci_msg[q->ul_dci_count] = dci_msg;
+            q->ul_dci_count++;
+
+            // Move to next candidate
+            continue;
+          }
+
+          // Check if the grant exists already in the DL list
+          if (find_dci_msg(q->dl_dci_msg, q->dl_dci_msg_count, &dci_msg)) {
+            // The same DCI is in the list, keep moving
+            continue;
+          }
+
+          INFO("Found DCI in L=%d,ncce=%d", dci_msg.ctx.location.L, dci_msg.ctx.location.ncce);
+          // Append DCI message into the list
+          q->dl_dci_msg[q->dl_dci_msg_count] = dci_msg;
+          q->dl_dci_msg_count++;
         }
-
-        // Check if the grant exists already in the DL list
-        if (find_dci_msg(q->dl_dci_msg, q->dl_dci_msg_count, &dci_msg)) {
-          // The same DCI is in the list, keep moving
-          continue;
-        }
-
-        INFO("Found DCI in L=%d,ncce=%d", dci_msg.ctx.location.L, dci_msg.ctx.location.ncce);
-        // Append DCI message into the list
-        q->dl_dci_msg[q->dl_dci_msg_count] = dci_msg;
-        q->dl_dci_msg_count++;
       }
     }
   }
@@ -506,6 +524,22 @@ int srsran_ue_dl_nr_find_dl_dci(srsran_ue_dl_nr_t*       q,
       return SRSRAN_ERROR;
     }
   } else {
+    q->pdcch_info_count = 0;
+    // Iterate all possible dedicated UE search spaces
+    for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE && q->dl_dci_msg_count < nof_dci_msg; i++) {
+      // Skip search space if not present
+      if (!q->cfg.dedicated_search_space_present[i]) {
+        continue;
+      }
+
+      // Find DCIs in the selected search space
+      int ret = ue_dl_nr_find_dci_ss(q, slot_cfg, &q->cfg.dedicated_search_space[i], rnti, rnti_type);
+      if (ret < SRSRAN_SUCCESS) {
+        ERROR("Error searcghing DCI");
+        return SRSRAN_ERROR;
+      }
+    }
+    q->pdcch_info_count = 0;
     // Iterate all possible common and UE search spaces
     for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE && q->dl_dci_msg_count < nof_dci_msg; i++) {
       // Skip search space if not present

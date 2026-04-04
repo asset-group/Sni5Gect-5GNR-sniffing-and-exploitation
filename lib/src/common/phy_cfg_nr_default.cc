@@ -382,7 +382,7 @@ void phy_cfg_nr_default_t::make_harq_auto(srsran_harq_ack_cfg_hl_t&        harq,
       }
 
       // Otherwise set delay to the first UL slot of the next TDD period
-      harq.dl_data_to_ul_ack[n] = (tdd_cfg.pattern1.period_ms + tdd_cfg.pattern1.nof_dl_slots) - n;
+      harq.dl_data_to_ul_ack[n] = (uint32_t)(tdd_cfg.pattern1.period_ms) + tdd_cfg.pattern1.nof_dl_slots - n;
     }
   } else {
     harq.dl_data_to_ul_ack[0]  = 4;

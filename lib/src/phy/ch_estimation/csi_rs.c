@@ -130,6 +130,19 @@ static int csi_rs_location_get_k_list(const srsran_csi_rs_resource_mapping_t* re
     }
   }
 
+  // Rows 5,6,9,11,13,16: row=other, FD-CDM2, density=1, various port counts
+  // Per TS 38.211 Table 7.4.1.5.3-1, all these rows have k_list = (kj, kj+1)
+  if (resource->row == srsran_csi_rs_resource_mapping_row_other &&
+      resource->density == srsran_csi_rs_resource_mapping_density_one && resource->cdm == srsran_csi_rs_cdm_fd_cdm2) {
+    int kj = csi_rs_location_f(resource, j + 1);
+    if (kj < SRSRAN_SUCCESS) {
+      return SRSRAN_ERROR;
+    }
+    k_list[0] = kj;
+    k_list[1] = kj + 1;
+    return 2;
+  }
+
   // Inform about an unhandled configuration
   RESOURCE_ERROR(resource);
   return SRSRAN_ERROR;
@@ -179,6 +192,23 @@ static int csi_rs_location_get_l_list(const srsran_csi_rs_resource_mapping_t* re
       l_list[0] = l0;
       return 1;
     }
+  }
+
+  // Rows 5,6,9,11: row=other, FD-CDM2, density=1, single symbol
+  if (resource->row == srsran_csi_rs_resource_mapping_row_other &&
+      resource->density == srsran_csi_rs_resource_mapping_density_one && resource->cdm == srsran_csi_rs_cdm_fd_cdm2 &&
+      resource->first_symbol_idx2 == 0) {
+    l_list[0] = l0;
+    return 1;
+  }
+
+  // Rows 13,16: row=other, FD-CDM2, density=1, two symbols (first_symbol_idx2 > 0)
+  if (resource->row == srsran_csi_rs_resource_mapping_row_other &&
+      resource->density == srsran_csi_rs_resource_mapping_density_one && resource->cdm == srsran_csi_rs_cdm_fd_cdm2 &&
+      resource->first_symbol_idx2 > 0) {
+    l_list[0] = l0;
+    l_list[1] = resource->first_symbol_idx2;
+    return 2;
   }
 
   // Inform about an unhandled configuration
@@ -233,6 +263,15 @@ static int csi_rs_nof_cdm_groups(const srsran_csi_rs_resource_mapping_t* resourc
   if (resource->row == srsran_csi_rs_resource_mapping_row_4 && resource->nof_ports == 4 &&
       resource->density == srsran_csi_rs_resource_mapping_density_one && resource->cdm == srsran_csi_rs_cdm_fd_cdm2) {
     return 2;
+  }
+
+  // Rows 5-18: row=other, FD-CDM2, density=1, various port counts
+  // CDM groups = nof_ports / (cdm_size * nof_symbols)
+  // For FD-CDM2 cdm_size=2; nof_symbols=1 (single symbol) or 2 (dual symbol)
+  if (resource->row == srsran_csi_rs_resource_mapping_row_other &&
+      resource->density == srsran_csi_rs_resource_mapping_density_one && resource->cdm == srsran_csi_rs_cdm_fd_cdm2) {
+    uint32_t nof_symbols = (resource->first_symbol_idx2 > 0) ? 2 : 1;
+    return (int)(resource->nof_ports / (2 * nof_symbols));
   }
 
   // Inform about an unhandled configuration

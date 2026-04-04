@@ -25,16 +25,102 @@
 
 namespace srsran {
 
+static void sliv_to_start_and_bw(uint32_t sliv, uint32_t* start, uint32_t* bw)
+{
+  uint32_t N    = SRSRAN_MAX_PRB_NR;
+  uint32_t low  = sliv % N;
+  uint32_t high = sliv / N;
+  if (high + 1 + low <= N) {
+    *start = low;
+    *bw    = high + 1;
+  } else {
+    *start = N - 1 - low;
+    *bw    = N - high + 1;
+  }
+}
+// TS 38.214 version 16.2.0 6.1.2.2.1 Uplink resource allocation type 0
+static uint32_t get_nominal_rbg_size_p(uint32_t bwp_nof_prb, bool cfg1)
+{
+  if (bwp_nof_prb <= 36) {
+    if (cfg1) {
+      return 2;
+    } else {
+      return 4;
+    }
+  }
+  if (bwp_nof_prb <= 72) {
+    if (cfg1) {
+      return 4;
+    } else {
+      return 8;
+    }
+  }
+  if (bwp_nof_prb <= 144) {
+    if (cfg1) {
+      return 8;
+    } else {
+      return 16;
+    }
+  }
+  if (bwp_nof_prb <= 275) {
+    if (cfg1) {
+      return 16;
+    } else {
+      return 16;
+    }
+  }
+  return 0;
+}
+
+// Compute nof_rb_groups for resource allocation type 0 (TS 38.214 Table 5.1.2.2.1-1)
+static uint32_t get_rbg_size(uint32_t prb_start, uint32_t prb_bw, bool cfg1)
+{
+  uint32_t p = get_nominal_rbg_size_p(prb_bw, cfg1);
+  if (p == 0) {
+    return 0;
+  }
+  // return (prb_bw + (prb_start % p)) / p;
+  return (prb_bw + p - 1) / p;
+}
+
 srsran_dci_cfg_nr_t phy_cfg_nr_t::get_dci_cfg() const
 {
   srsran_dci_cfg_nr_t dci_cfg = {};
 
-  // Assume BWP bandwidth equals full channel bandwidth
+  // Decode active BWP BW/start from locationAndBandwidth RIV when available.
+  uint32_t dl_bwp_start = 0;
+  uint32_t dl_bwp_bw    = carrier.nof_prb;
+  uint32_t ul_bwp_start = 0;
+  uint32_t ul_bwp_bw    = carrier.nof_prb;
+
+  if (dl_location_and_bw > 0U) {
+    sliv_to_start_and_bw(dl_location_and_bw, &dl_bwp_start, &dl_bwp_bw);
+  }
+
+  if (ul_location_and_bw > 0U) {
+    sliv_to_start_and_bw(ul_location_and_bw, &ul_bwp_start, &ul_bwp_bw);
+  }
+
   dci_cfg.coreset0_bw       = pdcch.coreset_present[0] ? srsran_coreset_get_bw(&pdcch.coreset[0]) : 0;
   dci_cfg.bwp_dl_initial_bw = carrier.nof_prb;
   dci_cfg.bwp_dl_active_bw  = carrier.nof_prb;
   dci_cfg.bwp_ul_initial_bw = carrier.nof_prb;
   dci_cfg.bwp_ul_active_bw  = carrier.nof_prb;
+
+  for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE; i++) {
+    if (not pdcch.dedicated_search_space_present[i]) {
+      continue;
+    }
+    for (uint32_t j = 0; j < pdcch.dedicated_search_space[i].nof_formats; j++) {
+      if (pdcch.dedicated_search_space[i].type == srsran_search_space_type_ue &&
+          pdcch.dedicated_search_space[i].formats[j] == srsran_dci_format_nr_0_0) {
+        dci_cfg.monitor_0_0_and_1_0 = true;
+      } else if (pdcch.dedicated_search_space[i].type == srsran_search_space_type_ue &&
+                 pdcch.dedicated_search_space[i].formats[j] == srsran_dci_format_nr_0_1) {
+        dci_cfg.monitor_0_1_and_1_1 = true;
+      }
+    }
+  }
 
   // Iterate over all SS to select monitoring options
   for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE; i++) {
@@ -60,48 +146,51 @@ srsran_dci_cfg_nr_t phy_cfg_nr_t::get_dci_cfg() const
   }
 
   // Set PUSCH parameters
-  dci_cfg.enable_sul     = false;
-  dci_cfg.enable_hopping = false;
+  dci_cfg.enable_sul     = enable_sul;
+  dci_cfg.enable_hopping = enable_hopping;
 
   // Set Format 0_1 and 1_1 parameters
   dci_cfg.carrier_indicator_size = 0;
-  dci_cfg.harq_ack_codebok       = harq_ack.harq_ack_codebook;
-  dci_cfg.nof_rb_groups          = 0;
+  dci_cfg.harq_ack_codebook      = harq_ack.harq_ack_codebook;
+  dci_cfg.nof_dl_rb_groups       = get_rbg_size(dl_bwp_start, dl_bwp_bw, pdsch.rbg_size_cfg_1);
+
+  dci_cfg.prb_dynamic_bundling = prb_dynamic_bundling;
 
   // Format 0_1 specific configuration (for PUSCH only)
-  dci_cfg.nof_ul_bwp      = 0;
-  dci_cfg.nof_ul_time_res = (pusch.nof_dedicated_time_ra > 0)
-                                ? pusch.nof_dedicated_time_ra
-                                : (pusch.nof_common_time_ra > 0) ? pusch.nof_common_time_ra : SRSRAN_MAX_NOF_TIME_RA;
-  dci_cfg.nof_srs                        = 1;
-  dci_cfg.nof_ul_layers                  = 1;
-  dci_cfg.pusch_nof_cbg                  = 0;
-  dci_cfg.report_trigger_size            = 0;
-  dci_cfg.enable_transform_precoding     = false;
+  dci_cfg.nof_ul_bwp                     = nof_ul_bwp;
+  dci_cfg.nof_ul_time_res                = (pusch.nof_dedicated_time_ra > 0) ? pusch.nof_dedicated_time_ra
+                                           : (pusch.nof_common_time_ra > 0)  ? pusch.nof_common_time_ra
+                                                                             : SRSRAN_MAX_NOF_TIME_RA;
+  dci_cfg.nof_srs                        = nof_srs;
+  dci_cfg.nof_srs_ports                  = nof_srs_ports;
+  dci_cfg.nof_ul_layers                  = nof_ul_layers;
+  dci_cfg.pusch_nof_cbg                  = pusch_nof_cbg;
+  dci_cfg.report_trigger_size            = report_trigger_size;
+  dci_cfg.enable_transform_precoding     = pusch.enable_transform_precoder;
   dci_cfg.dynamic_dual_harq_ack_codebook = false;
-  dci_cfg.pusch_tx_config_non_codebook   = false;
-  dci_cfg.pusch_ptrs                     = false;
-  dci_cfg.pusch_dynamic_betas            = false;
+  dci_cfg.pusch_tx_config_non_codebook   = pusch_tx_cfg_non_codebook;
+  dci_cfg.pusch_ptrs                     = pusch_ptrs;
+  dci_cfg.pusch_dynamic_betas            = pusch_dynamic_betas;
   dci_cfg.pusch_alloc_type               = pusch.alloc;
   dci_cfg.pusch_dmrs_type                = pusch.dmrs_type;
   dci_cfg.pusch_dmrs_max_len             = pusch.dmrs_max_length;
 
   // Format 1_1 specific configuration (for PDSCH only)
-  dci_cfg.nof_dl_bwp      = 0;
-  dci_cfg.nof_dl_time_res = (pdsch.nof_dedicated_time_ra > 0)
-                                ? pdsch.nof_dedicated_time_ra
-                                : (pdsch.nof_common_time_ra > 0) ? pdsch.nof_common_time_ra : SRSRAN_MAX_NOF_TIME_RA;
-  dci_cfg.nof_aperiodic_zp       = 0;
-  dci_cfg.pdsch_nof_cbg          = 0;
+  dci_cfg.nof_dl_bwp             = nof_dl_bwp;
+  dci_cfg.nof_dl_time_res        = (pdsch.nof_dedicated_time_ra > 0) ? pdsch.nof_dedicated_time_ra
+                                   : (pdsch.nof_common_time_ra > 0)  ? pdsch.nof_common_time_ra
+                                                                     : SRSRAN_MAX_NOF_TIME_RA;
+  dci_cfg.nof_aperiodic_zp       = nof_aperiodic_zp;
+  dci_cfg.pdsch_nof_cbg          = pdsch_nof_cbg;
   dci_cfg.nof_dl_to_ul_ack       = harq_ack.nof_dl_data_to_ul_ack;
-  dci_cfg.pdsch_inter_prb_to_prb = false;
-  dci_cfg.pdsch_rm_pattern1      = false;
-  dci_cfg.pdsch_rm_pattern2      = false;
-  dci_cfg.pdsch_2cw              = false;
+  dci_cfg.pdsch_inter_prb_to_prb = pdsch_inter_prb_to_prb;
+  dci_cfg.pdsch_rm_pattern1      = pdsch_rm_pattern1;
+  dci_cfg.pdsch_rm_pattern2      = pdsch_rm_pattern2;
+  dci_cfg.pdsch_2cw              = pdsch_2cw;
   dci_cfg.multiple_scell         = false;
-  dci_cfg.pdsch_tci              = false;
-  dci_cfg.pdsch_cbg_flush        = false;
-  dci_cfg.pdsch_dynamic_bundling = false;
+  dci_cfg.pdsch_tci              = pdsch_tci;
+  dci_cfg.pdsch_cbg_flush        = pdsch_cbg_flush;
+  dci_cfg.pdsch_dynamic_bundling = pdsch_dynamic_bundling;
   dci_cfg.pdsch_alloc_type       = pdsch.alloc;
   dci_cfg.pdsch_dmrs_type        = pdsch.dmrs_type;
   dci_cfg.pdsch_dmrs_max_len     = pdsch.dmrs_max_length;

@@ -98,7 +98,7 @@ static int run_test(srsran_dmrs_pdcch_estimator_t* estimator,
 
       TESTASSERT(srsran_dmrs_pdcch_put(&carrier, coreset, &slot_cfg, &dci_location, sf_symbols) == SRSRAN_SUCCESS);
 
-      TESTASSERT(srsran_dmrs_pdcch_estimate(estimator, &slot_cfg, sf_symbols) == SRSRAN_SUCCESS);
+      TESTASSERT(srsran_dmrs_pdcch_estimate(estimator, &slot_cfg, sf_symbols, 0) == SRSRAN_SUCCESS);
 
       srsran_dmrs_pdcch_measure_t measure = {};
       TESTASSERT(srsran_dmrs_pdcch_get_measure(estimator, &dci_location, &measure) == SRSRAN_SUCCESS);

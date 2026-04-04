@@ -336,7 +336,8 @@ srsran_dmrs_pdcch_extract(srsran_dmrs_pdcch_estimator_t* q, uint32_t cinit, cons
 
 int srsran_dmrs_pdcch_estimate(srsran_dmrs_pdcch_estimator_t* q,
                                const srsran_slot_cfg_t*       slot_cfg,
-                               const cf_t*                    sf_symbols)
+                               const cf_t*                    sf_symbols,
+                               uint32_t                       start_symbol)
 {
   if (q == NULL || sf_symbols == NULL) {
     return SRSRAN_ERROR_INVALID_INPUTS;
@@ -353,11 +354,11 @@ int srsran_dmrs_pdcch_estimate(srsran_dmrs_pdcch_estimator_t* q,
 
   // Extract pilots
   for (uint32_t l = 0; l < q->coreset.duration; l++) {
-    // Calculate PRN sequence initial state
-    uint32_t cinit = dmrs_pdcch_get_cinit(slot_idx, l, n_id);
+    // Calculate PRN sequence initial state using absolute symbol index per TS 38.211 7.4.1.3.1
+    uint32_t cinit = dmrs_pdcch_get_cinit(slot_idx, start_symbol + l, n_id);
 
-    // Extract pilots least square estimates
-    srsran_dmrs_pdcch_extract(q, cinit, &sf_symbols[l * q->carrier.nof_prb * SRSRAN_NRE], q->lse[l]);
+    // Extract pilots least square estimates from the correct OFDM symbol
+    srsran_dmrs_pdcch_extract(q, cinit, &sf_symbols[(start_symbol + l) * q->carrier.nof_prb * SRSRAN_NRE], q->lse[l]);
   }
 
   // Time averaging and smoothing should be implemented here
@@ -438,7 +439,7 @@ int srsran_dmrs_pdcch_get_measure(const srsran_dmrs_pdcch_estimator_t* q,
   for (uint32_t l = 0; l < q->coreset.duration; l++) {
     // Temporal least square estimates
     cf_t     tmp[DMRS_PDCCH_MAX_NOF_PILOTS_CANDIDATE] = {};
-    uint32_t nof_pilots = 0;
+    uint32_t nof_pilots                               = 0;
 
     // For each RB in the CORESET
     for (uint32_t rb = 0; rb < q->coreset_bw; rb++) {

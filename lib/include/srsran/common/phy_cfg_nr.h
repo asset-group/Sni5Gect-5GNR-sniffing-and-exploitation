@@ -25,6 +25,7 @@
 #include "srsran/config.h"
 #include "srsran/srsran.h"
 #include <array>
+#include <map>
 #include <srsran/adt/bounded_vector.h>
 #include <string>
 
@@ -56,6 +57,51 @@ struct phy_cfg_nr_t {
   srsran_carrier_nr_t       carrier  = {};
   ssb_cfg_t                 ssb      = {};
   uint32_t                  t_offset = 0; ///< n-TimingAdvanceOffset
+
+  std::map<uint32_t, srsran_csi_rs_zp_resource_t>  csi_rs_zp_res;
+  std::map<uint32_t, srsran_csi_rs_nzp_resource_t> csi_rs_nzp_res;
+
+  uint32_t dl_location_and_bw = 0;
+  uint32_t dl_bwp_start       = 0;
+  uint32_t dl_bwp_size        = 0;
+  uint32_t ul_location_and_bw = 0;
+  uint32_t ul_bwp_start       = 0;
+  uint32_t ul_bwp_size        = 0;
+
+  uint32_t nof_dl_bwp = 0;
+  uint32_t nof_ul_bwp = 0;
+
+  uint32_t nof_ul_layers = 1;
+  uint32_t nof_dl_layers = 1;
+
+  uint32_t nof_srs       = 1; ///< Number of SRS resources in resource set (from SRS-Config)
+  uint32_t nof_srs_ports = 1; ///< Max nrofSRS-Ports across SRS resources (1, 2, or 4)
+
+  uint32_t nof_zp_sci_rs    = 0;
+  uint32_t nof_aperiodic_zp = 0;
+
+  bool enable_sul     = false;
+  bool enable_hopping = false;
+
+  uint32_t report_trigger_size = 0;
+
+  uint32_t pusch_nof_cbg = 0;
+  uint32_t pdsch_nof_cbg = 0;
+
+  uint32_t prb_dynamic_bundling = false;
+  uint32_t prb_bundle_size      = 0;
+
+  bool pdsch_inter_prb_to_prb = false;
+  bool pdsch_rm_pattern1      = false;
+  bool pdsch_rm_pattern2      = false;
+  bool pdsch_2cw              = false;
+  bool pdsch_tci              = false;
+  bool pdsch_cbg_flush        = false;
+  bool pdsch_dynamic_bundling = false;
+
+  bool pusch_tx_cfg_non_codebook = false;
+  bool pusch_ptrs                = false; ///< PUSCH PTRS enabled (from DMRS-UplinkConfig phaseTrackingRS)
+  bool pusch_dynamic_betas       = false;
 
   phy_cfg_nr_t() {}
 
