@@ -29,7 +29,10 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 namespace asn1 {
 
@@ -118,6 +121,11 @@ void log_error_code(SRSASN_CODE code, const char* filename, int line);
   } while (0)
 
 const char* convert_enum_idx(const char* array[], uint32_t nof_types, uint32_t enum_val, const char* enum_type);
+bool        convert_enum_str(const char* array[],
+                             uint32_t    nof_types,
+                             const char* str,
+                             uint32_t&   enum_val,
+                             const char* enum_type);
 template <class ItemType>
 ItemType map_enum_number(ItemType* array, uint32_t nof_types, uint32_t enum_val, const char* enum_type);
 
@@ -159,6 +167,8 @@ public:
   SRSASN_CODE unpack_bytes(uint8_t* buf, uint32_t n_bytes);
   SRSASN_CODE align_bytes();
   SRSASN_CODE advance_bits(uint32_t n_bits);
+  SRSASN_CODE advance_bytes(uint32_t bytes);
+  bit_ref_impl<Ptr> subview(uint32_t offset_bytes, uint32_t len_bytes) const;
   void        set(Ptr start_ptr_, uint32_t max_size_);
 
 protected:
@@ -1017,17 +1027,59 @@ SRSASN_CODE unpack_fixed_seq_of(T* item_array, cbit_ref& bref, uint32_t nof_item
   return SRSASN_SUCCESS;
 }
 
+template <class ArrayType,
+          class ItemPacker,
+          typename std::enable_if<!std::is_pointer<typename std::decay<ArrayType>::type>::value, int>::type = 0>
+SRSASN_CODE pack_fixed_seq_of(bit_ref& bref, const ArrayType& item_array, uint32_t nof_items, ItemPacker packer)
+{
+  for (uint32_t i = 0; i < nof_items; ++i) {
+    HANDLE_CODE(packer.pack(bref, item_array[i]));
+  }
+  return SRSASN_SUCCESS;
+}
+
+template <class ArrayType,
+          typename std::enable_if<!std::is_pointer<typename std::decay<ArrayType>::type>::value, int>::type = 0>
+SRSASN_CODE pack_fixed_seq_of(bit_ref& bref, const ArrayType& item_array, uint32_t nof_items)
+{
+  for (uint32_t i = 0; i < nof_items; ++i) {
+    HANDLE_CODE(item_array[i].pack(bref));
+  }
+  return SRSASN_SUCCESS;
+}
+
+template <class ArrayType,
+          class ItemUnpacker,
+          typename std::enable_if<!std::is_pointer<typename std::decay<ArrayType>::type>::value, int>::type = 0>
+SRSASN_CODE unpack_fixed_seq_of(ArrayType& item_array, cbit_ref& bref, uint32_t nof_items, ItemUnpacker unpacker)
+{
+  for (uint32_t i = 0; i < nof_items; ++i) {
+    HANDLE_CODE(unpacker.unpack(item_array[i], bref));
+  }
+  return SRSASN_SUCCESS;
+}
+
+template <class ArrayType,
+          typename std::enable_if<!std::is_pointer<typename std::decay<ArrayType>::type>::value, int>::type = 0>
+SRSASN_CODE unpack_fixed_seq_of(ArrayType& item_array, cbit_ref& bref, uint32_t nof_items)
+{
+  for (uint32_t i = 0; i < nof_items; ++i) {
+    HANDLE_CODE(item_array[i].unpack(bref));
+  }
+  return SRSASN_SUCCESS;
+}
+
 template <class ItemPacker>
 struct FixedSeqOfPacker {
   FixedSeqOfPacker(uint32_t nof_items_, ItemPacker packer_) : nof_items(nof_items_), packer(packer_) {}
   explicit FixedSeqOfPacker(uint32_t nof_items_) : nof_items(nof_items_), packer(Packer()) {}
   template <typename T>
-  SRSASN_CODE pack(bit_ref& bref, const T* topack)
+  SRSASN_CODE pack(bit_ref& bref, const T& topack)
   {
     return pack_fixed_seq_of(bref, topack, nof_items, packer);
   }
   template <typename T>
-  SRSASN_CODE unpack(T* tounpack, bit_ref& bref)
+  SRSASN_CODE unpack(T& tounpack, cbit_ref& bref)
   {
     return unpack_fixed_seq_of(tounpack, bref, nof_items, packer);
   }
@@ -1230,6 +1282,18 @@ copy_ptr<typename std::decay<T>::type> make_copy_ptr(T&& t)
   return copy_ptr<T2>(new T2(std::forward<T>(t)));
 }
 
+template <class T>
+SRSASN_CODE unpack_presence_flag(copy_ptr<T>& optional_field, cbit_ref& bref)
+{
+  bool        present_flag;
+  SRSASN_CODE ret = bref.unpack(present_flag, 1);
+  if (ret != SRSASN_SUCCESS) {
+    return ret;
+  }
+  optional_field.set_present(present_flag);
+  return ret;
+}
+
 /*********************
      choice utils
 *********************/
@@ -1292,6 +1356,82 @@ struct choice_buffer_t : public choice_buffer_base_t<static_max<sizeof(alignment
 
 using pod_choice_buffer_t = choice_buffer_t<>;
 
+struct choice_buffer_ptr {
+public:
+  choice_buffer_ptr() = default;
+  choice_buffer_ptr(const choice_buffer_ptr& other) : obj(other.obj ? other.obj->clone() : nullptr) {}
+  choice_buffer_ptr(choice_buffer_ptr&&) noexcept = default;
+  choice_buffer_ptr& operator=(const choice_buffer_ptr& other)
+  {
+    if (this != &other) {
+      obj = other.obj ? other.obj->clone() : nullptr;
+    }
+    return *this;
+  }
+  choice_buffer_ptr& operator=(choice_buffer_ptr&&) noexcept = default;
+
+  template <typename T>
+  choice_buffer_ptr(T&& to_store)
+  {
+    using stored_t = typename std::decay<T>::type;
+    obj            = std::unique_ptr<base_choice_t>(new choice_t<stored_t>(std::forward<T>(to_store)));
+  }
+
+  template <typename T, typename std::enable_if<!std::is_same<typename std::decay<T>::type, choice_buffer_ptr>::value, int>::type = 0>
+  choice_buffer_ptr& operator=(T&& to_store)
+  {
+    using stored_t = typename std::decay<T>::type;
+    obj            = std::unique_ptr<base_choice_t>(new choice_t<stored_t>(std::forward<T>(to_store)));
+    return *this;
+  }
+
+  bool has_value() const { return obj != nullptr; }
+
+  template <typename T>
+  bool holds_choice() const
+  {
+    return dynamic_cast<const choice_t<T>*>(obj.get()) != nullptr;
+  }
+
+  template <typename T>
+  T& get()
+  {
+    choice_t<T>* ret = dynamic_cast<choice_t<T>*>(obj.get());
+    srsran_assert(ret != nullptr, "Invalid choice type");
+    return ret->value;
+  }
+
+  template <typename T>
+  const T& get() const
+  {
+    const choice_t<T>* ret = dynamic_cast<const choice_t<T>*>(obj.get());
+    srsran_assert(ret != nullptr, "Invalid choice type");
+    return ret->value;
+  }
+
+  void reset() { obj.reset(); }
+
+private:
+  struct base_choice_t {
+    virtual ~base_choice_t()                         = default;
+    virtual std::unique_ptr<base_choice_t> clone() const = 0;
+  };
+
+  template <typename T>
+  struct choice_t : public base_choice_t {
+    template <typename U>
+    explicit choice_t(U&& v) : value(std::forward<U>(v))
+    {
+    }
+
+    std::unique_ptr<base_choice_t> clone() const override { return std::unique_ptr<base_choice_t>(new choice_t<T>(value)); }
+
+    T value;
+  };
+
+  std::unique_ptr<base_choice_t> obj;
+};
+
 /*********************
       ext group
 *********************/
@@ -1321,6 +1461,40 @@ private:
   const uint32_t  nof_supported_groups;
   uint32_t        nof_unpacked_groups = 0;
   cbit_ref*       bref_tracker        = nullptr;
+};
+
+/// Used to decode extension groups sequentially while keeping bounded bit-ranges per group.
+class ext_groups_unpacker
+{
+public:
+  ext_groups_unpacker(cbit_ref& bref_, bool aligned_ = false);
+
+  SRSASN_CODE unpack_next_group();
+
+  bool get_last_group_range(cbit_ref& bref)
+  {
+    srsran_assert(next_group_idx > 0, "No group has been unpacked yet");
+    if (state != state_t::done and groups[next_group_idx - 1]) {
+      bref = group_bref;
+      return true;
+    }
+    return false;
+  }
+
+  SRSASN_CODE consume_remaining_groups(cbit_ref& bref);
+
+private:
+  enum class state_t : uint8_t { unpack_presence_flags, unpack_groups, done };
+
+  SRSASN_CODE unpack_presence_flags();
+
+  const bool      aligned;
+  state_t         state               = state_t::unpack_presence_flags;
+  uint32_t        nof_unpacked_groups = 0;
+  uint32_t        next_group_idx      = 0;
+  cbit_ref        outer_bref;
+  cbit_ref        group_bref;
+  ext_array<bool> groups;
 };
 
 /*********************
@@ -1401,6 +1575,16 @@ inline auto to_json(json_writer& j, const T& obj) -> decltype(j.write_str(obj.to
 
 template <typename T>
 inline void to_json(json_writer& j, const asn1::dyn_array<T>& lst)
+{
+  j.start_array();
+  for (const auto& o : lst) {
+    to_json(j, o);
+  }
+  j.end_array();
+}
+
+template <typename T, size_t N>
+inline void to_json(json_writer& j, const std::array<T, N>& lst)
 {
   j.start_array();
   for (const auto& o : lst) {
@@ -1558,6 +1742,85 @@ struct setup_release_c {
 private:
   types type_;
   T     c;
+};
+
+template <typename T, size_t N>
+struct setup_release_c<std::array<T, N>> {
+  using types_opts = setup_release_opts;
+  using types      = setup_release_e;
+
+  // choice methods
+  setup_release_c() = default;
+  void        set(typename types::options e = types::nulltype) { type_ = e; }
+  types       type() const { return type_; }
+  SRSASN_CODE pack(bit_ref& bref) const
+  {
+    type_.pack(bref);
+    switch (type_) {
+      case types::release:
+        break;
+      case types::setup:
+        HANDLE_CODE(pack_fixed_seq_of(bref, c, N));
+        break;
+      default:
+        log_invalid_choice_id(type_, "setup_release_c");
+        return SRSASN_ERROR_ENCODE_FAIL;
+    }
+    return SRSASN_SUCCESS;
+  }
+  SRSASN_CODE unpack(cbit_ref& bref)
+  {
+    types e;
+    e.unpack(bref);
+    set(e);
+    switch (type_) {
+      case types::release:
+        break;
+      case types::setup:
+        HANDLE_CODE(unpack_fixed_seq_of(c, bref, N));
+        break;
+      default:
+        log_invalid_choice_id(type_, "setup_release_c");
+        return SRSASN_ERROR_DECODE_FAIL;
+    }
+    return SRSASN_SUCCESS;
+  }
+  void to_json(json_writer& j) const
+  {
+    j.start_obj();
+    switch (type_) {
+      case types::release:
+        break;
+      case types::setup:
+        asn1::to_json(j, setup());
+        break;
+      default:
+        log_invalid_choice_id(type_, "setup_release_c");
+    }
+    j.end_obj();
+  }
+  // getters
+  bool is_setup() const { return type_.value == setup_release_opts::setup; }
+  std::array<T, N>& setup()
+  {
+    assert_choice_type(types::setup, type_, "SetupRelease");
+    return c;
+  }
+  const std::array<T, N>& setup() const
+  {
+    assert_choice_type(types::setup, type_, "SetupRelease");
+    return c;
+  }
+  void set_release() { set(types::release); }
+  std::array<T, N>& set_setup()
+  {
+    set(types::setup);
+    return c;
+  }
+
+private:
+  types            type_;
+  std::array<T, N> c;
 };
 
 // Criticality ::= ENUMERATED

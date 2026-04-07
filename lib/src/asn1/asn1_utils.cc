@@ -77,6 +77,22 @@ const char* convert_enum_idx(const char* array[], uint32_t nof_types, uint32_t e
   return array[enum_val];
 }
 
+bool convert_enum_str(const char* array[],
+                      uint32_t    nof_types,
+                      const char* str,
+                      uint32_t&   enum_val,
+                      const char* enum_type)
+{
+  for (uint32_t i = 0; i < nof_types; ++i) {
+    if (strcmp(str, array[i]) == 0) {
+      enum_val = i;
+      return true;
+    }
+  }
+  log_error("The string '%s' is not a valid value for enum type %s.", str, enum_type);
+  return false;
+}
+
 template <class ItemType>
 ItemType map_enum_number(ItemType* array, uint32_t nof_types, uint32_t enum_val, const char* enum_type)
 {
@@ -295,6 +311,33 @@ SRSASN_CODE bit_ref_impl<Ptr>::advance_bits(uint32_t n_bits)
   ptr += bytes_offset;
   offset = extra_bits;
   return SRSASN_SUCCESS;
+}
+
+template <typename Ptr>
+SRSASN_CODE bit_ref_impl<Ptr>::advance_bytes(uint32_t bytes)
+{
+  if (ptr + bytes + (offset != 0 ? 1 : 0) > max_ptr) {
+    log_error("advance_bytes: Buffer size limit was achieved");
+    return SRSASN_ERROR_DECODE_FAIL;
+  }
+  ptr += bytes;
+  return SRSASN_SUCCESS;
+}
+
+template <typename Ptr>
+bit_ref_impl<Ptr> bit_ref_impl<Ptr>::subview(uint32_t offset_bytes, uint32_t len_bytes) const
+{
+  const uint32_t buffer_rem_bytes = max_ptr - ptr;
+  const uint32_t nof_bytes_needed = len_bytes + ((offset != 0) ? 1 : 0);
+  if (offset_bytes + nof_bytes_needed > buffer_rem_bytes) {
+    log_error("subview: Buffer size limit was achieved");
+    return bit_ref_impl<Ptr>();
+  }
+
+  Ptr start_it = ptr + offset_bytes;
+  bit_ref_impl<Ptr> v(start_it, nof_bytes_needed);
+  v.offset = offset;
+  return v;
 }
 
 template <typename Ptr>
@@ -1410,6 +1453,58 @@ SRSASN_CODE ext_groups_unpacker_guard::unpack(cbit_ref& bref)
   for (uint32_t i = 0; i < nof_unpacked_groups; ++i) {
     HANDLE_CODE(bref.unpack(groups[i], 1));
   }
+  return SRSASN_SUCCESS;
+}
+
+ext_groups_unpacker::ext_groups_unpacker(cbit_ref& bref, bool aligned_) :
+  aligned(aligned_), outer_bref(bref), group_bref()
+{
+}
+
+SRSASN_CODE ext_groups_unpacker::unpack_presence_flags()
+{
+  uint32_t nof_ext_groups = 0;
+  HANDLE_CODE(unpack_norm_small_non_neg_whole_number(nof_ext_groups, outer_bref));
+  nof_unpacked_groups = nof_ext_groups + 1;
+
+  groups.resize(nof_unpacked_groups);
+  std::fill(groups.data(), groups.data() + nof_unpacked_groups, false);
+
+  for (uint32_t i = 0; i < nof_unpacked_groups; ++i) {
+    HANDLE_CODE(outer_bref.unpack(groups[i], 1));
+  }
+
+  return SRSASN_SUCCESS;
+}
+
+SRSASN_CODE ext_groups_unpacker::unpack_next_group()
+{
+  if (state == state_t::unpack_presence_flags) {
+    state = state_t::unpack_groups;
+    HANDLE_CODE(unpack_presence_flags());
+  }
+
+  if (next_group_idx >= nof_unpacked_groups) {
+    state = state_t::done;
+    return SRSASN_SUCCESS;
+  }
+
+  if (groups[next_group_idx++]) {
+    uint32_t group_len;
+    HANDLE_CODE(unpack_length(group_len, outer_bref, aligned));
+    group_bref = outer_bref.subview(0, group_len);
+    HANDLE_CODE(outer_bref.advance_bytes(group_len));
+  }
+
+  return SRSASN_SUCCESS;
+}
+
+SRSASN_CODE ext_groups_unpacker::consume_remaining_groups(cbit_ref& bref)
+{
+  while (next_group_idx < nof_unpacked_groups) {
+    HANDLE_CODE(unpack_next_group());
+  }
+  bref = outer_bref;
   return SRSASN_SUCCESS;
 }
 
