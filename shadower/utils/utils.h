@@ -1,6 +1,6 @@
 #pragma once
 #include "shadower/utils/arg_parser.h"
-#include "srsran/asn1/rrc_nr.h"
+#include "srsran/asn1/rrc_nr/bcch_dl_sch_msg.h"
 #include "srsran/config.h"
 extern "C" {
 #include "srsran/phy/phch/prach.h"
@@ -54,4 +54,4 @@ int add_fake_header(uint8_t*             buffer,
 srslog::basic_logger& srslog_init(ShadowerConfig* config);
 
 /* Calculate the RA-rnti from SIB1 configuration */
-std::vector<uint16_t> get_ra_rnti_list(asn1::rrc_nr::sib1_s& sib1, ShadowerConfig& config);
+std::vector<uint16_t> get_ra_rnti_list(asn1::rrc_nr_r17::sib1_s& sib1, ShadowerConfig& config);

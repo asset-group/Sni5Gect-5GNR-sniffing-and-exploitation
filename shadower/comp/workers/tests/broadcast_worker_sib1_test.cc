@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
   bool            found_sib1 = false;
   BroadCastWorker broadcast_worker(config);
   broadcast_worker.apply_config_from_mib(mib, ncellid);
-  broadcast_worker.on_sib1_found = [&](asn1::rrc_nr::sib1_s& sib1) {
+  broadcast_worker.on_sib1_found = [&](asn1::rrc_nr_r17::sib1_s& sib1) {
     broadcast_worker.apply_config_from_sib1(sib1);
     found_sib1 = true;
   };

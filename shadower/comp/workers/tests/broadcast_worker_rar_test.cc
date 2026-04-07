@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
     return -1;
   }
   /* Decode SIB1 bytes to asn1 structure */
-  asn1::rrc_nr::sib1_s sib1 = {};
+  asn1::rrc_nr_r17::sib1_s sib1 = {};
   if (!parse_to_sib1(sib1_data.data(), sib_config_size, sib1)) {
     logger.error("Failed to parse SIB1");
     return -1;
