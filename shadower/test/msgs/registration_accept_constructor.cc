@@ -5,7 +5,7 @@
 #include "shadower/utils/safe_queue.h"
 #include "shadower/utils/utils.h"
 #include "srsran/asn1/nas_5g_msg.h"
-#include "srsran/asn1/rrc_nr.h"
+
 int main()
 {
   ShadowerConfig config = {};
@@ -24,8 +24,8 @@ int main()
   uint8_t     rrc_nr_mac[4] = {0};
 
   /* Pack the message to rrc nr first */
-  srsran::unique_byte_buffer_t rrc_nr_buffer = srsran::make_byte_buffer();
-  asn1::rrc_nr::dl_dcch_msg_s  dl_dcch_msg   = pack_nas_to_dl_dcch(nas_msg);
+  srsran::unique_byte_buffer_t    rrc_nr_buffer = srsran::make_byte_buffer();
+  asn1::rrc_nr_r17::dl_dcch_msg_s dl_dcch_msg   = pack_nas_to_dl_dcch(nas_msg);
   if (!pack_dl_dcch_to_rrc_nr(rrc_nr_buffer, dl_dcch_msg)) {
     logger.error("Failed to pack nas to rrc_nr\n");
     return -1;

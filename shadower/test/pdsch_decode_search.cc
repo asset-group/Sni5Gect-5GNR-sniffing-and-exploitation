@@ -1,5 +1,4 @@
 #include "shadower/utils/utils.h"
-#include "srsran/asn1/rrc_nr.h"
 #include "srsran/mac/mac_sch_pdu_nr.h"
 #include "srsran/phy/phch/pbch_msg_nr.h"
 #include "srsran/phy/ue/ue_dl_nr.h"

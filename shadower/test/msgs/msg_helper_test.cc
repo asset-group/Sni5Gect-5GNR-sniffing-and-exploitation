@@ -3,7 +3,6 @@
 #include "shadower/test/test_variables.h"
 #include "shadower/utils/safe_queue.h"
 #include "shadower/utils/utils.h"
-#include "srsran/asn1/rrc_nr.h"
 #include "srsran/support/srsran_test.h"
 int main()
 {
@@ -22,8 +21,8 @@ int main()
   uint8_t rrc_nr_origin[] = {0x28, 0x82, 0x6f, 0xc0, 0x72, 0xd9, 0x06, 0x5d, 0x20, 0x0f, 0xc0,
                              0x0b, 0xa0, 0x40, 0x00, 0x5e, 0x1e, 0x1c, 0x26, 0xc0, 0x20, 0x40};
 
-  srsran::unique_byte_buffer_t rrc_nr_buffer = srsran::make_byte_buffer();
-  asn1::rrc_nr::dl_dcch_msg_s  dl_dcch_msg   = pack_nas_to_dl_dcch(nas_msg);
+  srsran::unique_byte_buffer_t    rrc_nr_buffer = srsran::make_byte_buffer();
+  asn1::rrc_nr_r17::dl_dcch_msg_s dl_dcch_msg   = pack_nas_to_dl_dcch(nas_msg);
   if (!pack_dl_dcch_to_rrc_nr(rrc_nr_buffer, dl_dcch_msg)) {
     logger.error("Failed to pack nas to rrc_nr\n");
     return -1;
