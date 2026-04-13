@@ -20,12 +20,14 @@
  */
 #include "srsran/phy/phch/pusch_nr.h"
 #include "srsran/phy/common/phy_common_nr.h"
+#include "srsran/phy/dft/dft_precoding.h"
 #include "srsran/phy/mimo/layermap.h"
 #include "srsran/phy/mimo/precoding.h"
 #include "srsran/phy/modem/demod_soft.h"
 #include "srsran/phy/phch/csi.h"
 #include "srsran/phy/phch/ra_nr.h"
 #include "srsran/phy/phch/uci_cfg.h"
+#include "srsran/phy/utils/vector.h"
 
 static int pusch_nr_alloc(srsran_pusch_nr_t* q, uint32_t max_mimo_layers, uint32_t max_prb)
 {
@@ -139,6 +141,12 @@ int srsran_pusch_nr_init_gnb(srsran_pusch_nr_t* q, const srsran_pusch_nr_args_t*
     }
   }
 
+  // Initialise DFT precoding for transform precoding (RX/IDFT)
+  if (srsran_dft_precoding_init_rx(&q->dft_precoding, args->max_prb) < SRSRAN_SUCCESS) {
+    ERROR("Initialising DFT precoding");
+    return SRSRAN_ERROR;
+  }
+
   return SRSRAN_SUCCESS;
 }
 
@@ -245,6 +253,8 @@ void srsran_pusch_nr_free(srsran_pusch_nr_t* q)
   if (q->evm_buffer != NULL) {
     srsran_evm_free(q->evm_buffer);
   }
+
+  srsran_dft_precoding_free(&q->dft_precoding);
 
   SRSRAN_MEM_ZERO(q, srsran_pusch_nr_t, 1);
 }
@@ -993,6 +1003,24 @@ int srsran_pusch_nr_decode(srsran_pusch_nr_t*           q,
   // Antenna port demapping
   // ... Not implemented
   srsran_predecoding_single(q->x[0], channel->ce[0][0], q->d[0], NULL, nof_re, 1.0f, channel->noise_estimate);
+
+  // 6.3.1.4 Transform precoding (inverse)
+  if (cfg->enable_transform_precoder) {
+    // Count data symbols (DMRS symbols carry no data when transform precoding is enabled)
+    uint32_t nof_data_symbols = 0;
+    for (uint32_t l = grant->S; l < grant->S + grant->L; l++) {
+      if (!q->dmrs_re_pattern.symbol[l]) {
+        nof_data_symbols++;
+      }
+    }
+
+    // Apply IDFT: q->d[0] -> q->x[0], then copy back to q->d[0]
+    if (srsran_dft_precoding(&q->dft_precoding, q->d[0], q->x[0], grant->nof_prb, nof_data_symbols) < SRSRAN_SUCCESS) {
+      ERROR("Error applying inverse DFT precoding");
+      return SRSRAN_ERROR;
+    }
+    srsran_vec_cf_copy(q->d[0], q->x[0], nof_re);
+  }
 
   // Layer demapping
   if (grant->nof_layers > 1) {

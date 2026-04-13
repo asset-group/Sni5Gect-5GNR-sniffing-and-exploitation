@@ -29,6 +29,7 @@
 #include <strings.h>
 
 #include "srsran/phy/common/phy_common.h"
+#include "srsran/phy/common/phy_common_nr.h"
 #include "srsran/phy/dft/dft.h"
 #include "srsran/phy/dft/dft_precoding.h"
 #include "srsran/phy/utils/debug.h"
@@ -41,7 +42,7 @@ int srsran_dft_precoding_init(srsran_dft_precoding_t* q, uint32_t max_prb, bool 
   int ret = SRSRAN_ERROR_INVALID_INPUTS;
   bzero(q, sizeof(srsran_dft_precoding_t));
 
-  if (max_prb <= SRSRAN_MAX_PRB) {
+  if (max_prb <= SRSRAN_MAX_PRB_NR) {
     ret = SRSRAN_ERROR;
     for (uint32_t i = 1; i <= max_prb; i++) {
       if (srsran_dft_precoding_valid_prb(i)) {
