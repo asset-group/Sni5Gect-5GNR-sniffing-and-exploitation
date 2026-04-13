@@ -159,6 +159,7 @@ typedef struct {
   srsran_tdd_config_t tdd_config;
   bool                enable_successive_cancellation;
   bool                enable_freq_domain_offset_calc;
+  bool                enable_msg3_transform_precoder;
 } srsran_prach_cfg_t;
 
 typedef struct SRSRAN_API {
