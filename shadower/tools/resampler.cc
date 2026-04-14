@@ -57,17 +57,18 @@ int main(int argc, char* argv[])
   printf("Output file: %s opened successfully!\n", output_file.c_str());
 
   // Create a liquid resampler object
-  double            resample_rate = output_srate / input_srate;
-  msresamp_crcf     resampler     = msresamp_crcf_create(resample_rate, TARGET_STOPBAND_SUPPRESSION);
-  uint32_t          sf_len_in     = input_srate * SF_DURATION;
-  uint32_t          sf_len_out    = output_srate * SF_DURATION;
-  std::vector<cf_t> input_buffer(sf_len_in);
-  std::vector<cf_t> output_buffer(sf_len_out);
+  double                resample_rate = output_srate / input_srate;
+  msresamp_crcf         resampler     = msresamp_crcf_create(resample_rate, TARGET_STOPBAND_SUPPRESSION);
+  uint32_t              sf_len_in     = input_srate * SF_DURATION;
+  uint32_t              sf_len_out    = output_srate * SF_DURATION;
+  std::vector<cf_t>     input_buffer(sf_len_in);
+  std::vector<cf_t>     output_buffer(sf_len_out);
+  const std::streamsize expected_bytes = static_cast<std::streamsize>(sf_len_in * sizeof(cf_t));
 
   while (in.good()) {
     // Read the input buffer
-    in.read(reinterpret_cast<char*>(input_buffer.data()), sf_len_in * sizeof(cf_t));
-    if (in.gcount() != sf_len_in * sizeof(cf_t)) {
+    in.read(reinterpret_cast<char*>(input_buffer.data()), expected_bytes);
+    if (in.gcount() != expected_bytes) {
       break; // End of file or read error
     }
     uint32_t num_output_samples;

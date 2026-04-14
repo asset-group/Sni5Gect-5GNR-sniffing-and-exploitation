@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
     logger.error("Failed to load data from %s", dci_ul_file.c_str());
     return -1;
   }
-  for (int i = 0; i < args.slot_per_sf; i++) {
+  for (uint32_t i = 0; i < args.slot_per_sf; i++) {
     /* copy samples to ue_dl processing buffer */
     srsran_vec_cf_copy(ue_dl_buffer, dci_samples.data() + args.slot_len * i, args.slot_len);
     /* Initialize slot cfg */
