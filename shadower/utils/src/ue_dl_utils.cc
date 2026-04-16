@@ -13,6 +13,8 @@ bool init_ue_dl(srsran_ue_dl_nr_t& ue_dl, cf_t* buffer, srsran::phy_cfg_nr_t& ph
   ue_dl_args.pdsch.sch.decoder_use_flooded      = false;
   ue_dl_args.pdsch.sch.decoder_scaling_factor   = 0;
   ue_dl_args.pdsch.sch.max_nof_iter             = 10;
+  ue_dl_args.pdcch_dmrs_corr_thr                = 0.15f;   /* Lowered for passive sniffer (default 0.5) */
+  ue_dl_args.pdcch_dmrs_epre_thr                = -100.0f; /* Lowered for passive sniffer (default -80.0) */
   ue_dl_args.scs                                = phy_cfg.carrier.scs;
   ue_dl_args.sample_rate_hz                     = phy_cfg.carrier.sample_rate_hz;
   std::array<cf_t*, SRSRAN_MAX_PORTS> rx_buffer = {};
@@ -54,33 +56,33 @@ void ue_dl_dci_search(srsran_ue_dl_nr_t&                                        
   char dci_str[256];
   ue_dl.num_dl_dci = 0;
   ue_dl.num_ul_dci = 0;
-  /* Estimate PDCCH channel for every configured CORESET for each slot */
-  for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_CORESET; i++) {
-    if (ue_dl.cfg.coreset_present[i]) {
-      srsran_dmrs_pdcch_estimate(&ue_dl.dmrs_pdcch[i], &slot_cfg, ue_dl.sf_symbols[0]);
-    }
-  }
+  // /* Estimate PDCCH channel for every configured CORESET for each slot */
+  // for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_CORESET; i++) {
+  //   if (ue_dl.cfg.coreset_present[i]) {
+  //     srsran_dmrs_pdcch_estimate(&ue_dl.dmrs_pdcch[i], &slot_cfg, ue_dl.sf_symbols[0], 0);
+  //   }
+  // }
   /* Function used to detect the DCI for DL within the slot*/
   int num_dci_dl =
       srsran_ue_dl_nr_find_dl_dci(&ue_dl, &slot_cfg, rnti, rnti_type, dci_dl.data(), (uint32_t)dci_dl.size());
   ue_dl.num_dl_dci = num_dci_dl;
   for (int i = 0; i < num_dci_dl; i++) {
-    phy_state.set_dl_pending_grant(phy_cfg, slot_cfg, dci_dl[i]);
     if (logger.debug.enabled()) {
       srsran_dci_dl_nr_to_str(&ue_dl.dci, &dci_dl[i], dci_str, 256);
       logger.debug("DCI DL slot %u %u: %s", task_idx, slot_cfg.idx, dci_str);
     }
+    phy_state.set_dl_pending_grant(phy_cfg, slot_cfg, dci_dl[i]);
   }
   /* Function used to detect the DCI for UL within the slot*/
   int num_dci_ul =
       srsran_ue_dl_nr_find_ul_dci(&ue_dl, &slot_cfg, rnti, rnti_type, dci_ul.data(), (uint32_t)dci_ul.size());
   ue_dl.num_ul_dci = num_dci_ul;
   for (int i = 0; i < num_dci_ul; i++) {
-    phy_state.set_ul_pending_grant(phy_cfg, slot_cfg, dci_ul[i]);
     if (logger.debug.enabled()) {
       srsran_dci_ul_nr_to_str(&ue_dl.dci, &dci_ul[i], dci_str, 256);
       logger.debug("DCI UL slot %u %u: %s", task_idx, slot_cfg.idx, dci_str);
     }
+    phy_state.set_ul_pending_grant(phy_cfg, slot_cfg, dci_ul[i]);
   }
 }
 

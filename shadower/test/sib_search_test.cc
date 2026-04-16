@@ -56,6 +56,26 @@ int main(int argc, char* argv[])
       slot_number = 1;
       half        = 0;
       break;
+    case 7:
+      sample_file = "shadower/test/data/oai-n78-40mhz-3427.5/sib.fc32";
+      slot_number = 0;
+      half        = 0;
+      break;
+    case 8:
+      sample_file = "shadower/test/data/cyberx-n78-40MHz/sib1.fc32";
+      slot_number = 10;
+      half        = 0;
+      break;
+    case 9:
+      sample_file = "shadower/test/data/amarisoft-n78-20MHz/sib1.fc32";
+      slot_number = 0;
+      half        = 0;
+      break;
+    case 10:
+      sample_file = "shadower/test/data/starhub-n1-20MHz/sib1.fc32";
+      slot_number = 5;
+      half        = 0;
+      break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
       exit(EXIT_FAILURE);
@@ -157,7 +177,7 @@ int main(int argc, char* argv[])
   }
 
   /* decode SIB1 */
-  asn1::rrc_nr::sib1_s sib1;
+  asn1::rrc_nr_r17::sib1_s sib1 = {};
   if (!parse_to_sib1(data->msg, data->N_bytes, sib1)) {
     logger.error("Error decoding SIB1");
     return -1;

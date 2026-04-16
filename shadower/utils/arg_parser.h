@@ -76,12 +76,15 @@ struct ShadowerConfig {
   uint32_t ul_channel;
 
   // Source configurations
-  std::string source_type;   // Source type: file, uhd, limeSDR
-  std::string source_params; // Source parameters, e.g., device args, record file
-  std::string source_module; // Source module file
+  std::string source_type;               // Source type: file, uhd, limeSDR
+  std::string source_params;             // Source parameters, e.g., device args, record file
+  std::string source_module;             // Source module file
+  std::string clock_source = "internal"; // Clock source for SDR, e.g., internal, gpsdo, etc.
+  std::string sync_source  = "internal"; // Time source for SDR, e.g., internal, gpsdo, etc.
 
   // Recorder configurations
   bool enable_recorder = false; // Enable recording the IQ samples to subframes
+  bool expose_data     = false; // Expose the recorded data for other modules to use
 
   // Logger configurations
   srslog::basic_levels log_level        = srslog::basic_levels::info;

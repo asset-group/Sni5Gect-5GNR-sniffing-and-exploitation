@@ -1,24 +1,25 @@
 #include "shadower/utils/msg_helper.h"
-#include "srsran/asn1/rrc_nr.h"
+#include "shadower/utils/phy_cfg_utils.h"
+#include "srsran/asn1/rrc_nr/rrc_nr.h"
 #include "srsran/mac/mac_sch_pdu_nr.h"
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
 /* Put the nas message in to dl_dcch_msg */
-asn1::rrc_nr::dl_dcch_msg_s pack_nas_to_dl_dcch(const std::string& nas_msg)
+asn1::rrc_nr_r17::dl_dcch_msg_s pack_nas_to_dl_dcch(const std::string& nas_msg)
 {
-  asn1::rrc_nr::dl_dcch_msg_s       dl_dcch_msg;
-  asn1::rrc_nr::dl_info_transfer_s& dl_information_transfer = dl_dcch_msg.msg.set_c1().set_dl_info_transfer();
-  dl_information_transfer.rrc_transaction_id                = 0;
-  asn1::rrc_nr::dl_info_transfer_ies_s& dl_information_transfer_ies =
+  asn1::rrc_nr_r17::dl_dcch_msg_s       dl_dcch_msg;
+  asn1::rrc_nr_r17::dl_info_transfer_s& dl_information_transfer = dl_dcch_msg.msg.set_c1().set_dl_info_transfer();
+  dl_information_transfer.rrc_transaction_id                    = 0;
+  asn1::rrc_nr_r17::dl_info_transfer_ies_s& dl_information_transfer_ies =
       dl_information_transfer.crit_exts.set_dl_info_transfer();
   dl_information_transfer_ies.ded_nas_msg.from_string(nas_msg);
   return dl_dcch_msg;
 }
 
 /* Put the dl_dcch msg into rrc nr and encode it */
-bool pack_dl_dcch_to_rrc_nr(srsran::unique_byte_buffer_t& buffer, const asn1::rrc_nr::dl_dcch_msg_s& dl_dcch_msg)
+bool pack_dl_dcch_to_rrc_nr(srsran::unique_byte_buffer_t& buffer, const asn1::rrc_nr_r17::dl_dcch_msg_s& dl_dcch_msg)
 {
   asn1::bit_ref bref{buffer->msg + buffer->N_bytes, buffer->get_tailroom()};
   if (dl_dcch_msg.pack(bref) != asn1::SRSASN_SUCCESS) {
@@ -95,31 +96,31 @@ bool extract_con_res_id(const uint8_t*                              buffer,
     srsran::mac_sch_subpdu_nr& subpdu = pdu.get_subpdu(i);
     if (subpdu.get_lcid() == srsran::mac_sch_subpdu_nr::nr_lcid_sch_t::CCCH_SIZE_48) {
       /* Unpack to ul_ccch_msg */
-      asn1::rrc_nr::ul_ccch_msg_s ul_ccch_msg;
-      asn1::cbit_ref              bref(subpdu.get_sdu(), subpdu.get_sdu_length());
-      asn1::SRSASN_CODE           err = ul_ccch_msg.unpack(bref);
+      asn1::rrc_nr_r17::ul_ccch_msg_s ul_ccch_msg;
+      asn1::cbit_ref                  bref(subpdu.get_sdu(), subpdu.get_sdu_length());
+      asn1::SRSASN_CODE               err = ul_ccch_msg.unpack(bref);
       if (err != asn1::SRSASN_SUCCESS ||
-          ul_ccch_msg.msg.type().value != asn1::rrc_nr::ul_ccch_msg_type_c::types_opts::c1) {
+          ul_ccch_msg.msg.type().value != asn1::rrc_nr_r17::ul_ccch_msg_type_c::types_opts::c1) {
         logger.error("Error unpacking UL-CCCH message");
         return false;
       }
 
       /* Check if it is RRC setup request */
-      if (ul_ccch_msg.msg.c1().type().value != asn1::rrc_nr::ul_ccch_msg_type_c::c1_c_::types::rrc_setup_request) {
+      if (ul_ccch_msg.msg.c1().type().value != asn1::rrc_nr_r17::ul_ccch_msg_type_c::c1_c_::types::rrc_setup_request) {
         logger.error("Not RRC setup request");
         return false;
       }
 
       /* Unpack and extract ue contention resolution identity */
-      asn1::rrc_nr::rrc_setup_request_s& rrc_setup_req        = ul_ccch_msg.msg.c1().rrc_setup_request();
-      asn1::rrc_nr::init_ue_id_c&        init_ue_id_c         = rrc_setup_req.rrc_setup_request.ue_id;
-      asn1::fixed_bitstring<39>          con_res_id_bitstring = {};
+      asn1::rrc_nr_r17::rrc_setup_request_s& rrc_setup_req        = ul_ccch_msg.msg.c1().rrc_setup_request();
+      asn1::rrc_nr_r17::init_ue_id_c&        init_ue_id_c         = rrc_setup_req.rrc_setup_request.ue_id;
+      asn1::fixed_bitstring<39>              con_res_id_bitstring = {};
       switch (init_ue_id_c.type().value) {
-        case asn1::rrc_nr::init_ue_id_c::types_opts::random_value:
+        case asn1::rrc_nr_r17::init_ue_id_c::types_opts::random_value:
           con_res_id_bitstring = init_ue_id_c.random_value();
           break;
-        case asn1::rrc_nr::init_ue_id_c::types_opts::ng_minus5_g_s_tmsi_part1:
-          con_res_id_bitstring = init_ue_id_c.ng_minus5_g_s_tmsi_part1();
+        case asn1::rrc_nr_r17::init_ue_id_c::types_opts::ng_5_g_s_tmsi_part1:
+          con_res_id_bitstring = init_ue_id_c.ng_5_g_s_tmsi_part1();
           break;
         default:
           break;
@@ -194,20 +195,20 @@ bool modify_monitoring_symbol_within_slot(uint8_t*              dl_ccch_msg_raw,
                                           std::vector<uint8_t>& modified_dl_ccch_msg)
 {
   /* Parse to dl ccch msg */
-  asn1::rrc_nr::dl_ccch_msg_s dl_ccch_msg_orig;
+  asn1::rrc_nr_r17::dl_ccch_msg_s dl_ccch_msg_orig;
   if (!parse_to_dl_ccch_msg(dl_ccch_msg_raw, dl_ccch_msg_len, dl_ccch_msg_orig)) {
     printf("Failed to parse DL-CCCH message\n");
     return false;
   }
 
   /* Check if it is RRC setup message */
-  if (dl_ccch_msg_orig.msg.c1().type().value != asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_setup) {
+  if (dl_ccch_msg_orig.msg.c1().type().value != asn1::rrc_nr_r17::dl_ccch_msg_type_c::c1_c_::types::rrc_setup) {
     printf("Not RRC setup message\n");
     return false;
   }
 
   /* Extract cell group cfg from dl_ccch_msg */
-  asn1::rrc_nr::cell_group_cfg_s cell_group_orig;
+  asn1::rrc_nr_r17::cell_group_cfg_s cell_group_orig;
   if (!extract_cell_group_cfg(dl_ccch_msg_orig, cell_group_orig)) {
     printf("Failed to extract cell group config\n");
     return false;
@@ -228,10 +229,10 @@ bool modify_monitoring_symbol_within_slot(uint8_t*              dl_ccch_msg_raw,
   }
 
   /* Target element pdcch cfg */
-  asn1::rrc_nr::pdcch_cfg_s& pdcch_cfg = cell_group_orig.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup();
+  asn1::rrc_nr_r17::pdcch_cfg_s& pdcch_cfg = cell_group_orig.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup();
   /* Modify the pdcch cfg */
   for (uint32_t i = 0; i < pdcch_cfg.search_spaces_to_add_mod_list.size(); i++) {
-    asn1::rrc_nr::search_space_s& search_space = pdcch_cfg.search_spaces_to_add_mod_list[i];
+    asn1::rrc_nr_r17::search_space_s& search_space = pdcch_cfg.search_spaces_to_add_mod_list[i];
     search_space.monitoring_symbols_within_slot.from_string(symbol);
   }
 
@@ -246,11 +247,11 @@ bool modify_monitoring_symbol_within_slot(uint8_t*              dl_ccch_msg_raw,
   cell_group_modified.resize(bref_cell_group.distance_bytes());
 
   /* Pack into dl ccch msg */
-  asn1::rrc_nr::rrc_setup_s   rrc_setup_orig = dl_ccch_msg_orig.msg.c1().rrc_setup();
-  asn1::rrc_nr::dl_ccch_msg_s ccch;
-  asn1::rrc_nr::rrc_setup_s&  rrc_setup_modified        = ccch.msg.set_c1().set_rrc_setup();
-  rrc_setup_modified.rrc_transaction_id                 = rrc_setup_orig.rrc_transaction_id;
-  asn1::rrc_nr::rrc_setup_ies_s& rrc_setup_ies_modified = rrc_setup_modified.crit_exts.set_rrc_setup();
+  asn1::rrc_nr_r17::rrc_setup_s   rrc_setup_orig = dl_ccch_msg_orig.msg.c1().rrc_setup();
+  asn1::rrc_nr_r17::dl_ccch_msg_s ccch;
+  asn1::rrc_nr_r17::rrc_setup_s&  rrc_setup_modified        = ccch.msg.set_c1().set_rrc_setup();
+  rrc_setup_modified.rrc_transaction_id                     = rrc_setup_orig.rrc_transaction_id;
+  asn1::rrc_nr_r17::rrc_setup_ies_s& rrc_setup_ies_modified = rrc_setup_modified.crit_exts.set_rrc_setup();
   rrc_setup_ies_modified.radio_bearer_cfg.srb_to_add_mod_list.resize(1);
   rrc_setup_ies_modified.master_cell_group = cell_group_modified;
 
@@ -265,30 +266,5 @@ bool modify_monitoring_symbol_within_slot(uint8_t*              dl_ccch_msg_raw,
   dl_ccch_msg_modified.resize(bref_dl_ccch_msg.distance_bytes());
   modified_dl_ccch_msg.resize(dl_ccch_msg_modified.size());
   memcpy(modified_dl_ccch_msg.data(), dl_ccch_msg_modified.data(), dl_ccch_msg_modified.size());
-  return true;
-}
-
-/* Decode dl_ccch_msg_s bytes to asn1 structure */
-bool parse_to_dl_ccch_msg(uint8_t* data, uint32_t len, asn1::rrc_nr::dl_ccch_msg_s& dl_ccch_msg)
-{
-  asn1::cbit_ref    bref(data, len);
-  asn1::SRSASN_CODE err = dl_ccch_msg.unpack(bref);
-  if (err != asn1::SRSASN_SUCCESS || dl_ccch_msg.msg.type().value != asn1::rrc_nr::dl_ccch_msg_type_c::types_opts::c1) {
-    std::cerr << "Error unpacking DL-CCCH message\n";
-    return false;
-  }
-  return true;
-}
-
-/* extract cell_group struct from rrc_setup */
-bool extract_cell_group_cfg(asn1::rrc_nr::dl_ccch_msg_s& dl_ccch_msg, asn1::rrc_nr::cell_group_cfg_s& cell_group)
-{
-  asn1::rrc_nr::rrc_setup_s& rrc_setup_msg = dl_ccch_msg.msg.c1().rrc_setup();
-  asn1::cbit_ref             bref_cg(rrc_setup_msg.crit_exts.rrc_setup().master_cell_group.data(),
-                         rrc_setup_msg.crit_exts.rrc_setup().master_cell_group.size());
-  if (cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
-    printf("Could not unpack master cell group config.\n");
-    return false;
-  }
   return true;
 }

@@ -314,11 +314,23 @@ public:
   uhd_error set_rx_rate(double rate) override
   {
     Debug("Setting Rx Rate to " << rate / 1e6 << "MHz");
+    uhd::meta_range_t range = usrp->get_rx_rates();
+    if (std::abs(range.clip(rate) - rate) > 1) {
+      Error("The requested Rx rate " << rate << " Hz is out of range [" << range.start() << ", " << range.stop()
+                                     << "] Hz");
+      return UHD_ERROR_VALUE;
+    }
     SRSRAN_UHD_SAFE_C_LOG_ERROR(usrp->set_rx_rate(rate);)
   }
   uhd_error set_tx_rate(double rate) override
   {
     Debug("Setting Tx Rate to " << rate / 1e6 << "MHz");
+    uhd::meta_range_t range = usrp->get_rx_rates();
+    if (std::abs(range.clip(rate) - rate) > 1) {
+      Error("The requested Tx rate " << rate << " Hz is out of range [" << range.start() << ", " << range.stop()
+                                     << "] Hz");
+      return UHD_ERROR_VALUE;
+    }
     SRSRAN_UHD_SAFE_C_LOG_ERROR(usrp->set_tx_rate(rate);)
   }
   uhd_error set_command_time(const uhd::time_spec_t& timespec) override
@@ -345,14 +357,35 @@ public:
                                   return UHD_ERROR_VALUE;
                                 })
   }
+
+  bool validate_gain(uhd::gain_range_t range, double gain)
+  {
+    int64_t clipped_gain = static_cast<int64_t>(std::round(range.clip(gain, true) * 100));
+    int64_t uint_gain    = static_cast<int64_t>(gain * 100);
+    if (std::abs(clipped_gain - uint_gain) > 99) {
+      UHD_LOG_ERROR("UHD",
+                    "TX gain " << gain << " dB is out of range [" << range.start() << ", " << range.stop() << "] dB");
+      return false;
+    }
+    return true;
+  }
+
   uhd_error set_tx_gain(size_t ch, double gain) override
   {
     Debug("Setting channel " << ch << " Tx gain to " << gain << " dB");
+    uhd::gain_range_t range = usrp->get_tx_gain_range(ch);
+    if (!validate_gain(range, gain)) {
+      throw std::runtime_error("Invalid Tx gain value");
+    }
     SRSRAN_UHD_SAFE_C_LOG_ERROR(usrp->set_tx_gain(gain, ch);)
   }
   uhd_error set_rx_gain(size_t ch, double gain) override
   {
     Debug("Setting channel " << ch << " Rx gain to " << gain << " dB");
+    uhd::gain_range_t range = usrp->get_rx_gain_range(ch);
+    if (!validate_gain(range, gain)) {
+      throw std::runtime_error("Invalid Rx gain value");
+    }
     SRSRAN_UHD_SAFE_C_LOG_ERROR(usrp->set_rx_gain(gain, ch);)
   }
   uhd_error get_rx_gain(double& gain) override { SRSRAN_UHD_SAFE_C_LOG_ERROR(gain = usrp->get_rx_gain();) }
@@ -360,6 +393,13 @@ public:
   uhd_error set_tx_freq(uint32_t ch, double target_freq, double& actual_freq) override
   {
     Debug("Setting channel " << ch << " Tx frequency to " << target_freq / 1e6 << " MHz");
+
+    uhd::freq_range_t range = usrp->get_tx_freq_range(ch);
+    if (std::abs(range.clip(target_freq) - target_freq) > 1) {
+      Error("The requested Tx frequency " << target_freq << " Hz is out of range [" << range.start() << ", "
+                                          << range.stop() << "] Hz");
+      return UHD_ERROR_VALUE;
+    }
 
     // Create Tune request
     uhd::tune_request_t tune_request(target_freq);
@@ -381,7 +421,12 @@ public:
   uhd_error set_rx_freq(uint32_t ch, double target_freq, double& actual_freq) override
   {
     Debug("Setting channel " << ch << " Rx frequency to " << target_freq / 1e6 << " MHz");
-
+    uhd::freq_range_t range = usrp->get_rx_freq_range(ch);
+    if (std::abs(range.clip(target_freq) - target_freq) > 1) {
+      Error("The requested Rx frequency " << target_freq << " Hz is out of range [" << range.start() << ", "
+                                          << range.stop() << "] Hz");
+      return UHD_ERROR_VALUE;
+    }
     // Create Tune request
     uhd::tune_request_t tune_request(target_freq);
 

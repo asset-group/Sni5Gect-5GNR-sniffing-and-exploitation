@@ -7,7 +7,6 @@
 #include "shadower/utils/phy_cfg_utils.h"
 #include "shadower/utils/task.h"
 #include "shadower/utils/ue_dl_utils.h"
-#include "srsran/asn1/rrc_nr.h"
 #include "srsran/common/mac_pcap.h"
 #include "srsran/common/phy_cfg_nr.h"
 #include "srsran/common/thread_pool.h"
@@ -50,7 +49,8 @@ public:
   std::function<void()> deactivate = [] {};
 
   /* Apply the configuration to cell group config */
-  std::function<void(asn1::rrc_nr::cell_group_cfg_s&)> apply_cell_group_cfg = [](asn1::rrc_nr::cell_group_cfg_s&) {};
+  std::function<void(asn1::rrc_nr_r17::cell_group_cfg_s&)> apply_cell_group_cfg =
+      [](asn1::rrc_nr_r17::cell_group_cfg_s&) {};
 
   /* Update the last received message timestamp */
   std::function<void()> update_rx_timestamp = []() {};
@@ -62,6 +62,12 @@ public:
   std::function<int(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg)> on_dci_ul_found =
       [](srsran_dci_ul_nr_t&, srsran_slot_cfg_t&) { return -1; };
 
+  void set_segments_map(std::map<uint32_t, std::vector<std::vector<uint8_t> > >& segments_map_)
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    segments_map = &segments_map_;
+  }
+
 private:
   srslog::basic_logger&             logger;
   std::mutex                        mutex;
@@ -71,6 +77,8 @@ private:
   srsran::phy_cfg_nr_t              phy_cfg = {};
   static TraceSamples               tracer_dl_pdsch;  // DCI DL + PDSCH
   static TraceSamples               tracer_dl_dci_ul; // DCI UL
+
+  std::map<uint32_t, std::vector<std::vector<uint8_t> > >* segments_map = nullptr;
 
 #if ENABLE_CUDA
   FFTProcessor* fft_processor = nullptr;

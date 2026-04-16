@@ -1,5 +1,6 @@
 #ifndef GNB_UL_WORKER
 #define GNB_UL_WORKER
+#include "shadower/comp/apis/apis.h"
 #include "shadower/comp/trace_samples/trace_samples.h"
 #include "shadower/comp/workers/wd_worker.h"
 #include "shadower/modules/exploit.h"
@@ -40,6 +41,9 @@ public:
   /* Update the last received message timestamp */
   std::function<void()> update_rx_timestamp = []() {};
 
+  /* Update the offset directly based on the DMRS estimation */
+  std::function<void(uint32_t)> update_offset_from_dmrs_feedback = [](uint32_t) {};
+
   /* Update the number of samples to send in advance */
   void set_ta_samples(double ta_time)
   {
@@ -51,10 +55,11 @@ public:
     logger.info("Setting Timing Advance samples for %u to %d", rnti, ta_samples);
   }
 
-  void set_ta_samples(int32_t new_ta_samples)
+  void set_ta_samples(int new_ta_samples)
   {
-    if (new_ta_samples < 0) {
-      new_ta_samples = 0;
+    if (new_ta_samples < 0 || new_ta_samples > static_cast<int>(slot_len)) {
+      logger.warning("Invalid Timing Advance samples for %u: %d", rnti, new_ta_samples);
+      return;
     }
     ta_samples = new_ta_samples;
     logger.info("Setting Timing Advance samples for %u to %d", rnti, ta_samples);
@@ -62,6 +67,8 @@ public:
 
   /* Process the tasks */
   void process_task(std::shared_ptr<Task> task);
+
+  void set_ul_api(std::shared_ptr<APIs> ul_api_) { ul_api = ul_api_; }
 
 private:
   srslog::basic_logger&             logger;
@@ -95,6 +102,8 @@ private:
   srsran_sch_cfg_nr_t    pusch_cfg     = {};
   srsran_softbuffer_rx_t softbuffer_rx = {};
   std::shared_ptr<Task>  task          = nullptr; // Current specified task
+
+  std::shared_ptr<APIs> ul_api = nullptr;
 
   /* Worker implementation, decode message send from UE to base station */
   void work_imp() override;

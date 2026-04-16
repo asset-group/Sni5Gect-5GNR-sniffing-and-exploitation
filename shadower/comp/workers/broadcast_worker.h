@@ -4,7 +4,6 @@
 #include "shadower/utils/constants.h"
 #include "shadower/utils/task.h"
 #include "shadower/utils/utils.h"
-#include "srsran/asn1/rrc_nr.h"
 #include "srsran/mac/mac_rar_pdu_nr.h"
 #include "srsran/srslog/srslog.h"
 #include "srsue/hdr/phy/nr/state.h"
@@ -25,7 +24,7 @@ public:
   bool apply_config_from_mib(srsran_mib_nr_t& mib_, uint32_t ncellid_);
 
   /* Apply the configuration from SIB1 */
-  bool apply_config_from_sib1(asn1::rrc_nr::sib1_s& sib1_);
+  bool apply_config_from_sib1(asn1::rrc_nr_r17::sib1_s& sib1_);
 
   void set_rnti(uint16_t rnti_, srsran_rnti_type_t rnti_type_)
   {
@@ -38,10 +37,10 @@ public:
       [](uint16_t, std::array<uint8_t, 27UL>&, uint32_t, uint32_t) {};
 
   /* handler function to apply the configuration from SIB1 */
-  std::function<void(asn1::rrc_nr::sib1_s&)> on_sib1_found = [](asn1::rrc_nr::sib1_s&) {};
+  std::function<void(asn1::rrc_nr_r17::sib1_s&)> on_sib1_found = [](asn1::rrc_nr_r17::sib1_s&) {};
 
-  srsran_mib_nr_t      mib  = {}; // Master Information Block configuration
-  asn1::rrc_nr::sib1_s sib1 = {}; // System Information Block 1 configuration
+  srsran_mib_nr_t          mib  = {}; // Master Information Block configuration
+  asn1::rrc_nr_r17::sib1_s sib1 = {}; // System Information Block 1 configuration
 
 private:
   srslog::basic_logger& logger = srslog::fetch_basic_logger("BCW", false);

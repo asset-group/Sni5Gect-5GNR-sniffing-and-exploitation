@@ -4,7 +4,6 @@
 #include "shadower/utils/msg_helper.h"
 #include "shadower/utils/safe_queue.h"
 #include "shadower/utils/utils.h"
-#include "srsran/asn1/rrc_nr.h"
 
 int main()
 {
@@ -20,16 +19,16 @@ int main()
   SafeQueue<std::vector<uint8_t> > ul_msg_queue;
   DummyExploit*                    exploit = new DummyExploit(dl_msg_queue, ul_msg_queue);
 
-  srsran::unique_byte_buffer_t       rrc_nr_buffer = srsran::make_byte_buffer();
-  uint8_t                            rrc_nr_mac[4] = {0};
-  asn1::rrc_nr::dl_dcch_msg_s        dl_dcch_msg;
-  asn1::rrc_nr::security_mode_cmd_s& sec_mode_cmd = dl_dcch_msg.msg.set_c1().set_security_mode_cmd();
-  sec_mode_cmd.rrc_transaction_id                 = 1;
-  asn1::rrc_nr::security_algorithm_cfg_s& algos =
+  srsran::unique_byte_buffer_t           rrc_nr_buffer = srsran::make_byte_buffer();
+  uint8_t                                rrc_nr_mac[4] = {0};
+  asn1::rrc_nr_r17::dl_dcch_msg_s        dl_dcch_msg;
+  asn1::rrc_nr_r17::security_mode_cmd_s& sec_mode_cmd = dl_dcch_msg.msg.set_c1().set_security_mode_cmd();
+  sec_mode_cmd.rrc_transaction_id                     = 1;
+  asn1::rrc_nr_r17::security_algorithm_cfg_s& algos =
       sec_mode_cmd.crit_exts.set_security_mode_cmd().security_cfg_smc.security_algorithm_cfg;
-  algos.ciphering_algorithm              = asn1::rrc_nr::ciphering_algorithm_opts::nea0;
+  algos.ciphering_algorithm              = asn1::rrc_nr_r17::ciphering_algorithm_opts::nea0;
   algos.integrity_prot_algorithm_present = true;
-  algos.integrity_prot_algorithm         = asn1::rrc_nr::integrity_prot_algorithm_opts::nia0;
+  algos.integrity_prot_algorithm         = asn1::rrc_nr_r17::integrity_prot_algorithm_opts::nia0;
 
   if (!pack_dl_dcch_to_rrc_nr(rrc_nr_buffer, dl_dcch_msg)) {
     logger.error("Failed to pack nas to rrc_nr\n");

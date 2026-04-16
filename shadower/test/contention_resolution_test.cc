@@ -41,10 +41,30 @@ int main(int argc, char* argv[])
       slot_number = 0;
       half        = 0;
       break;
+    case 5:
+      sample_file = "shadower/test/data/singtel-n1-20MHz/contention_resolution.fc32";
+      slot_number = 16;
+      half        = 0;
+      break;
     case 6:
       sample_file = "shadower/test/data/srsran-n5-10MHz/rrc_setup.fc32";
-      slot_number = 5;
+      slot_number = 18;
       half        = 0;
+      break;
+    case 7:
+      sample_file = "shadower/test/data/oai-n78-40mhz-3427.5/rrc-setup.fc32";
+      slot_number = 4;
+      half        = 0;
+      break;
+    case 8:
+      sample_file = "shadower/test/data/cyberx-n78-40MHz/rrc-setup.fc32";
+      slot_number = 10;
+      half        = 0;
+      break;
+    case 9:
+      sample_file = "shadower/test/data/amarisoft-n78-20MHz/rrc-setup.fc32";
+      slot_number = 4;
+      half        = 1;
       break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);

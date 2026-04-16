@@ -22,11 +22,15 @@
 #include "srsran/phy/ch_estimation/dmrs_sch.h"
 #include "srsran/phy/ch_estimation/csi_rs.h"
 #include "srsran/phy/common/sequence.h"
+#include "srsran/phy/common/zc_sequence.h"
+#include "srsran/phy/utils/vector.h"
 #include <complex.h>
 #include <srsran/phy/utils/debug.h>
 
 #define SRSRAN_DMRS_SCH_TYPEA_SINGLE_DURATION_MIN 3
 #define SRSRAN_DMRS_SCH_TYPEA_DOUBLE_DURATION_MIN 4
+#define SRSRAN_DMRS_SCH_TYPEB_SINGLE_DURATION_MIN 2
+#define SRSRAN_DMRS_SCH_TYPEB_DOUBLE_DURATION_MIN 2
 
 /**
  * @brief Set to 1 for synchronization error pre-compensation before interpolator
@@ -53,6 +57,47 @@
  */
 #define DMRS_SCH_MAX_NOF_PRB 106
 
+// clang-format off
+// TS 38.211 Table 7.4.1.1.2-3 mapping type B, single-symbol DMRS positions as bitmaps.
+// Rows: ld<4, ld=4..14. Columns: additional_pos 0, 1, 2, 3.
+// Bitmap bit n set means DMRS at relative symbol n within the allocation.
+// Verified against OAI openairinterface5g table_6_4_1_1_3_3_pusch_dmrs_positions_l (type B columns).
+// The index corresponds to the slot from right to left
+static const int32_t ul_dmrs_typeB_single_bitmap[12][4] = {
+    //  pos0    pos1    pos2    pos3
+    {1, 1, 1, 1},                         // ld < 4
+    {1, 1, 1, 1},                         // ld = 4
+    {1, 0b10001, 0b10001, 0b10001},       // ld = 5   (0b10001  = {0,4})
+    {1, 0b10001, 0b10001, 0b10001},       // ld = 6
+    {1, 0b10001, 0b10001, 0b10001},       // ld = 7
+    {1, 0b1000001, 0b1001001, 0b1001001}, // ld = 8   (0b1000001={0,6}, 0b1001001={0,3,6})
+    {1, 0b1000001, 0b1001001, 0b1001001}, // ld = 9
+    {1, 0b100000001, 0b100010001, 0b1001001001}, // ld = 10  (0b100000001={0,8}, 0b100010001={0,4,8}, 0b1001001001={0,3,6,9})
+    {1, 0b100000001, 0b100010001, 0b1001001001}, // ld = 11
+    {1, 0b10000000001, 0b10000100001, 0b1001001001},      // ld = 12  (0b10000000001={0,10}, 0b10000100001={0,5,10})
+    {1, 0b10000000001, 0b10000100001, 0b1001001001},      // ld = 13
+    {1, 0b10000000001, 0b10000100001, 0b1001001001},      // ld = 14
+};
+
+// TS 38.211 Table 7.4.1.1.2-4 mapping type B, double-symbol DMRS positions as bitmaps.
+// Rows: ld<4, ld=4..14. Columns: additional_pos 0, 1, 2, 3.
+// -1 = invalid/unsupported combination.
+static const int32_t ul_dmrs_typeB_double_bitmap[12][4] = {
+    //  pos0    pos1    pos2    pos3
+    {  -1,     -1,     -1,     -1   }, // ld < 4
+    {  -1,     -1,     -1,     -1   }, // ld = 4
+    {   1,      1,     -1,     -1   }, // ld = 5
+    {   1,      1,     -1,     -1   }, // ld = 6
+    {   1,      1,     -1,     -1   }, // ld = 7
+    {   1,      0b100001,    -1,     -1   }, // ld = 8   {0,5}
+    {   1,      0b100001,    -1,     -1   }, // ld = 9
+    {   1,      0b10000001,   -1,     -1   }, // ld = 10  {0,7}
+    {   1,      0b10000001,   -1,     -1   }, // ld = 11
+    {   1,      0b1000000001,  -1,     -1   }, // ld = 12  {0,9}
+    {   1,      0b1000000001,  -1,     -1   }, // ld = 13
+    {   1,      0b1000000001,  -1,     -1   }, // ld = 14
+};
+// clang-format on
 int srsran_dmrs_sch_cfg_to_str(const srsran_dmrs_sch_cfg_t* cfg, char* msg, uint32_t max_len)
 {
   int         type           = (int)cfg->type + 1;
@@ -258,6 +303,51 @@ static int srsran_dmrs_sch_put_symbol(srsran_dmrs_sch_t*           q,
   return pilot_count;
 }
 
+// Helper: convert srsran add_pos enum to 3GPP additional position index (0-3)
+static uint32_t dmrs_add_pos_to_index(srsran_dmrs_sch_add_pos_t add_pos)
+{
+  switch (add_pos) {
+    case srsran_dmrs_sch_add_pos_0:
+      return 0;
+    case srsran_dmrs_sch_add_pos_1:
+      return 1;
+    case srsran_dmrs_sch_add_pos_2:
+      return 2;
+    case srsran_dmrs_sch_add_pos_3:
+      return 3;
+    default:
+      return 2;
+  }
+}
+
+static int srsran_dmrs_sch_get_symbols_idx_mapping_type_B_single(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
+                                                                 uint32_t                     S,
+                                                                 uint32_t                     ld,
+                                                                 uint32_t symbols[SRSRAN_DMRS_SCH_MAX_SYMBOLS])
+{
+  if (ld < SRSRAN_DMRS_SCH_TYPEB_SINGLE_DURATION_MIN) {
+    ERROR("Duration is below minimum for mapping type B");
+    return SRSRAN_ERROR;
+  }
+  // Table row: ld < 4 maps to row 0, otherwise row = ld - 3
+  uint32_t row = (ld < 4) ? 0 : (ld - 3);
+  if (row > 11) {
+    row = 11;
+  }
+  uint32_t col    = dmrs_add_pos_to_index(dmrs_cfg->additional_pos);
+  int32_t  bitmap = ul_dmrs_typeB_single_bitmap[row][col];
+  int      count  = 0;
+
+  // Convert bitmap to absolute symbol indices
+  for (uint32_t i = 0; i < 14 && count < SRSRAN_DMRS_SCH_MAX_SYMBOLS; i++) {
+    if ((bitmap >> i) & 1) {
+      symbols[count] = S + i;
+      count++;
+    }
+  }
+  return count;
+}
+
 // Implements 3GPP 38.211 R.15 Table 7.4.1.1.2-3 PDSCH mapping type A Single
 static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_single(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
                                                                  uint32_t                     ld,
@@ -295,7 +385,8 @@ static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_single(const srsran_dm
     symbols[count] = 7;
     count++;
   } else if (ld < 12) {
-    if (dmrs_cfg->additional_pos > srsran_dmrs_sch_add_pos_2) {
+    if (dmrs_cfg->additional_pos == srsran_dmrs_sch_add_pos_2 ||
+        dmrs_cfg->additional_pos == srsran_dmrs_sch_add_pos_3) {
       symbols[count] = 6;
       count++;
     }
@@ -342,6 +433,40 @@ static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_single(const srsran_dm
         count++;
         symbols[count] = 11;
         count++;
+    }
+  }
+
+  return count;
+}
+
+// Implements 3GPP 38.211 Table 7.4.1.1.2-4 mapping type B Double
+static int srsran_dmrs_sch_get_symbols_idx_mapping_type_B_double(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
+                                                                 uint32_t                     S,
+                                                                 uint32_t                     ld,
+                                                                 uint32_t symbols[SRSRAN_DMRS_SCH_MAX_SYMBOLS])
+{
+  if (ld < SRSRAN_DMRS_SCH_TYPEB_DOUBLE_DURATION_MIN) {
+    ERROR("Duration is below the minimum for mapping type B double");
+    return SRSRAN_ERROR;
+  }
+
+  uint32_t row = (ld < 4) ? 0 : (ld - 3);
+  if (row > 11) {
+    row = 11;
+  }
+
+  uint32_t col    = dmrs_add_pos_to_index(dmrs_cfg->additional_pos);
+  int32_t  bitmap = ul_dmrs_typeB_double_bitmap[row][col];
+  if (bitmap < 0) {
+    ERROR("Unsupported type B double-symbol DMRS configuration (ld=%d, add_pos=%d)", ld, col);
+    return SRSRAN_ERROR;
+  }
+
+  int count = 0;
+  for (uint32_t i = 0; i < 14 && count < SRSRAN_DMRS_SCH_MAX_SYMBOLS; i++) {
+    if ((bitmap >> i) & 1) {
+      symbols[count] = S + i;
+      count++;
     }
   }
 
@@ -427,8 +552,10 @@ int srsran_dmrs_sch_get_symbols_idx(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
       }
       return srsran_dmrs_sch_get_symbols_idx_mapping_type_A_double(dmrs_cfg, ld, symbols);
     case srsran_sch_mapping_type_B:
-      ERROR("Error PDSCH mapping type B not supported");
-      return SRSRAN_ERROR;
+      if (dmrs_cfg->length == srsran_dmrs_sch_len_1) {
+        return srsran_dmrs_sch_get_symbols_idx_mapping_type_B_single(dmrs_cfg, grant->S, ld, symbols);
+      }
+      return srsran_dmrs_sch_get_symbols_idx_mapping_type_B_double(dmrs_cfg, grant->S, ld, symbols);
   }
 
   return SRSRAN_ERROR;
@@ -761,6 +888,108 @@ int srsran_dmrs_sch_get_symbol(srsran_dmrs_sch_t*           q,
   return pilot_count;
 }
 
+/**
+ * @brief Estimates DMRS channel using low-PAPR (ZC) reference sequences for transform precoding
+ *
+ * Per TS 38.211 Section 6.4.1.1.2, when transform precoding is enabled, DMRS uses low-PAPR sequences
+ * instead of pseudo-random sequences. The sequence group u = n_ID_RS mod 30, with n_ID_RS = PCI by default.
+ */
+static int srsran_dmrs_sch_get_symbol_low_papr(srsran_dmrs_sch_t*           q,
+                                               const srsran_sch_cfg_nr_t*   cfg,
+                                               const srsran_sch_grant_nr_t* grant,
+                                               uint32_t                     delta,
+                                               const cf_t*                  symbols,
+                                               cf_t*                        least_square_estimates)
+{
+  const srsran_dmrs_sch_cfg_t* dmrs_cfg         = &cfg->dmrs;
+  uint32_t                     nof_pilots_x_prb = dmrs_cfg->type == srsran_dmrs_sch_type_1 ? 6 : 4;
+
+  // Sequence group: u = n_ID_RS mod 30, where n_ID_RS = PCI (default, TS 38.211 6.4.1.1.3)
+  uint32_t u     = q->carrier.pci % 30;
+  uint32_t v     = 0;
+  float    alpha = 0.0f;
+
+  // delta for ZC sequence: 1 for DMRS type 1 (M_zc = m*6), 0 for type 2 (M_zc = m*12)
+  uint32_t zc_delta = (dmrs_cfg->type == srsran_dmrs_sch_type_1) ? 1 : 0;
+
+  // Generate low-PAPR ZC sequence for all allocated PRBs into q->temp
+  uint32_t M_zc = grant->nof_prb * nof_pilots_x_prb;
+  if (srsran_zc_sequence_generate_nr(u, v, alpha, grant->nof_prb, zc_delta, q->temp) < SRSRAN_SUCCESS) {
+    ERROR("Error generating low-PAPR ZC sequence (u=%d, m=%d, delta=%d)", u, grant->nof_prb, zc_delta);
+    return 0;
+  }
+
+  // Scale ZC reference by 1/beta_dmrs for correct LS estimation normalization
+  // (ZC sequence has unit magnitude; pseudo-random path uses amplitude = 1/sqrt(2)/beta mapped to magnitude 1/beta)
+  if (isnormal(grant->beta_dmrs)) {
+    srsran_vec_sc_prod_cfc(q->temp, 1.0f / grant->beta_dmrs, q->temp, M_zc);
+  }
+
+  // Extract pilots from resource grid and compute LS estimates
+  uint32_t pilot_count = 0;
+  uint32_t prb_count   = 0;
+  uint32_t prb_start   = 0;
+
+  for (uint32_t prb_idx = 0; prb_idx < q->carrier.nof_prb; prb_idx++) {
+    if (grant->prb_idx[prb_idx]) {
+      if (prb_count == 0) {
+        prb_start = prb_idx;
+      }
+      prb_count++;
+      continue;
+    }
+
+    if (prb_count == 0) {
+      continue;
+    }
+
+    // Extract pilots for this contiguous PRB group
+    uint32_t count = 0;
+    switch (dmrs_cfg->type) {
+      case srsran_dmrs_sch_type_1:
+        count =
+            srsran_dmrs_get_pilots_type1(prb_start, prb_count, delta, symbols, &least_square_estimates[pilot_count]);
+        break;
+      case srsran_dmrs_sch_type_2:
+        count =
+            srsran_dmrs_get_pilots_type2(prb_start, prb_count, delta, symbols, &least_square_estimates[pilot_count]);
+        break;
+      default:
+        ERROR("Unknown DMRS type.");
+        return 0;
+    }
+
+    // LS estimation: H_LS = pilot * conj(ref_zc)
+    srsran_vec_prod_conj_ccc(
+        &least_square_estimates[pilot_count], &q->temp[pilot_count], &least_square_estimates[pilot_count], count);
+    pilot_count += count;
+    prb_count = 0;
+  }
+
+  // Handle last contiguous PRB group
+  if (prb_count > 0) {
+    uint32_t count = 0;
+    switch (dmrs_cfg->type) {
+      case srsran_dmrs_sch_type_1:
+        count =
+            srsran_dmrs_get_pilots_type1(prb_start, prb_count, delta, symbols, &least_square_estimates[pilot_count]);
+        break;
+      case srsran_dmrs_sch_type_2:
+        count =
+            srsran_dmrs_get_pilots_type2(prb_start, prb_count, delta, symbols, &least_square_estimates[pilot_count]);
+        break;
+      default:
+        ERROR("Unknown DMRS type.");
+        return 0;
+    }
+    srsran_vec_prod_conj_ccc(
+        &least_square_estimates[pilot_count], &q->temp[pilot_count], &least_square_estimates[pilot_count], count);
+    pilot_count += count;
+  }
+
+  return pilot_count;
+}
+
 int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
                              const srsran_slot_cfg_t*     slot,
                              const srsran_sch_cfg_nr_t*   cfg,
@@ -800,10 +1029,16 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
   for (uint32_t i = 0; i < nof_symbols; i++) {
     uint32_t l = symbols[i]; // Symbol index inside the slot
 
-    uint32_t cinit = srsran_dmrs_sch_seed(&q->carrier, cfg, grant, SRSRAN_SLOT_NR_MOD(q->carrier.scs, slot->idx), l);
-
-    nof_pilots_x_symbol = srsran_dmrs_sch_get_symbol(
-        q, cfg, grant, cinit, delta, &sf_symbols[symbol_sz * l], &q->pilot_estimates[nof_pilots_x_symbol * i]);
+    if (cfg->enable_transform_precoder) {
+      // Use low-PAPR (ZC) reference sequences for transform precoding (TS 38.211 6.4.1.1.2)
+      nof_pilots_x_symbol = srsran_dmrs_sch_get_symbol_low_papr(
+          q, cfg, grant, delta, &sf_symbols[symbol_sz * l], &q->pilot_estimates[nof_pilots_x_symbol * i]);
+    } else {
+      // Use pseudo-random reference sequences (default)
+      uint32_t cinit = srsran_dmrs_sch_seed(&q->carrier, cfg, grant, SRSRAN_SLOT_NR_MOD(q->carrier.scs, slot->idx), l);
+      nof_pilots_x_symbol = srsran_dmrs_sch_get_symbol(
+          q, cfg, grant, cinit, delta, &sf_symbols[symbol_sz * l], &q->pilot_estimates[nof_pilots_x_symbol * i]);
+    }
 
     if (nof_pilots_x_symbol == 0) {
       ERROR("Error, no pilots extracted (i=%d, l=%d)", i, l);

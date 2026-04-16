@@ -25,8 +25,8 @@
 #include "../phy_metrics.h"
 #include "srsran/adt/circular_array.h"
 #include "srsran/common/common.h"
-#include "srsran/interfaces/ue_nr_interfaces.h"
 #include "srsran/common/tti_sempahore.h"
+#include "srsran/interfaces/ue_nr_interfaces.h"
 #include "srsran/srsran.h"
 #include <array>
 #include <mutex>
@@ -51,6 +51,7 @@ private:
     uint32_t                   pid;
     srsran_sch_cfg_nr_t        sch_cfg;
     srsran_harq_ack_resource_t ack_resource;
+    srsran_dci_ctx_t           dci_ctx;
   };
   srsran::circular_array<pending_dl_grant_t, TTIMOD_SZ> pending_dl_grant = {};
   mutable std::mutex                                    pending_dl_grant_mutex;
@@ -205,6 +206,7 @@ public:
     pending_grant.sch_cfg             = pdsch_cfg;
     pending_grant.ack_resource        = ack_resource;
     pending_grant.pid                 = dci_dl.pid;
+    pending_grant.dci_ctx             = dci_dl.ctx;
     pending_grant.enable              = true;
   }
 

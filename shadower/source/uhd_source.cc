@@ -6,23 +6,35 @@ class UHDSource final : public Source
 {
 public:
   /* Initialize the radio object and apply the configurations */
-  UHDSource(double                      srate_hz,
-            uint32_t                    nof_channels_,
-            std::vector<ChannelConfig>& channels,
-            const std::string&          device_args) :
-    rf(std::make_unique<srsran_rf_t>())
+  UHDSource(ShadowerConfig& config) : config(config), rf(std::make_unique<srsran_rf_t>())
   {
-    set_num_channels(nof_channels_);
+    set_num_channels(config.nof_channels);
+    // Set clock source
+    if (config.clock_source != "internal" && config.source_params.find("clock=") == std::string::npos) {
+      config.source_params += ",clock=" + config.clock_source;
+    }
+    // Set sync source
+    if (config.sync_source != "internal" && config.source_params.find("sync=") == std::string::npos) {
+      config.source_params += ",sync=" + config.sync_source;
+    }
+
+    // Configure the master_clock_rate for b210 device
+    if (config.source_params.find("type=b200") != std::string::npos &&
+        config.source_params.find("master_clock_rate=") == std::string::npos) {
+      config.source_params += ",master_clock_rate=" + std::to_string(config.sample_rate);
+      config.source_params += ",sampling_rate=" + std::to_string(config.sample_rate);
+    }
+
     /* Initialize srsran rf multi */
-    if (srsran_rf_open_multi(rf.get(), (char*)device_args.c_str(), nof_channels)) {
+    if (srsran_rf_open_multi(rf.get(), (char*)config.source_params.c_str(), nof_channels)) {
       throw std::runtime_error("Failed to open radio");
     }
 
     /* setup the rf interface */
-    srsran_rf_set_tx_srate(rf.get(), srate_hz);
-    srsran_rf_set_rx_srate(rf.get(), srate_hz);
+    srsran_rf_set_tx_srate(rf.get(), config.sample_rate);
+    srsran_rf_set_rx_srate(rf.get(), config.sample_rate);
     for (uint32_t ch = 0; ch < nof_channels; ch++) {
-      ChannelConfig& channelCfg = channels[ch];
+      ChannelConfig& channelCfg = config.channels[ch];
       srsran_rf_set_rx_freq(rf.get(), ch, channelCfg.rx_frequency + channelCfg.rx_offset);
       srsran_rf_set_rx_gain_ch(rf.get(), ch, channelCfg.rx_gain);
 
@@ -102,11 +114,12 @@ public:
 private:
   std::unique_ptr<srsran_rf_t> rf;
   std::mutex                   mutex;
+  ShadowerConfig               config = {};
 };
 
 extern "C" {
 __attribute__((visibility("default"))) Source* create_source(ShadowerConfig& config)
 {
-  return new UHDSource(config.sample_rate, config.nof_channels, config.channels, config.source_params);
+  return new UHDSource(config);
 }
 }

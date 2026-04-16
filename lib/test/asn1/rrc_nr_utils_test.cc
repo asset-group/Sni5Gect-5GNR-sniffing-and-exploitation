@@ -108,6 +108,29 @@ int make_phy_tdd_cfg_test()
   TESTASSERT(srsran_duplex_config_nr.tdd.pattern1.nof_ul_slots == 2);
   TESTASSERT(srsran_duplex_config_nr.tdd.pattern1.nof_ul_symbols == 4);
   TESTASSERT(srsran_duplex_config_nr.tdd.pattern2.period_ms == 0);
+
+  // Test ms2p5 periodicity
+  tdd_ul_dl_cfg_common_s tdd_ul_dl_cfg_common_2p5        = {};
+  tdd_ul_dl_cfg_common_2p5.ref_subcarrier_spacing        = subcarrier_spacing_opts::khz30;
+  tdd_ul_dl_cfg_common_2p5.pattern1.dl_ul_tx_periodicity = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5;
+  tdd_ul_dl_cfg_common_2p5.pattern1.nrof_dl_slots        = 3;
+  tdd_ul_dl_cfg_common_2p5.pattern1.nrof_dl_symbols      = 0;
+  tdd_ul_dl_cfg_common_2p5.pattern1.nrof_ul_slots        = 2;
+  tdd_ul_dl_cfg_common_2p5.pattern1.nrof_ul_symbols      = 0;
+
+  srsran_duplex_config_nr_t srsran_duplex_config_nr_2p5;
+  TESTASSERT(make_phy_tdd_cfg(tdd_ul_dl_cfg_common_2p5, &srsran_duplex_config_nr_2p5) == true);
+  TESTASSERT(srsran_duplex_config_nr_2p5.tdd.pattern1.period_ms == 2.5f);
+  TESTASSERT(srsran_duplex_config_nr_2p5.tdd.pattern1.nof_dl_slots == 3);
+  TESTASSERT(srsran_duplex_config_nr_2p5.tdd.pattern1.nof_ul_slots == 2);
+
+  // Test round-trip: PHY -> ASN1 -> verify ms2p5
+  asn1::rrc_nr::tdd_ul_dl_cfg_common_s tdd_ul_dl_cfg_roundtrip = {};
+  TESTASSERT(make_phy_tdd_cfg(srsran_duplex_config_nr_2p5, srsran_subcarrier_spacing_30kHz, &tdd_ul_dl_cfg_roundtrip) ==
+             true);
+  TESTASSERT(tdd_ul_dl_cfg_roundtrip.pattern1.dl_ul_tx_periodicity ==
+             tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5);
+
   return SRSRAN_SUCCESS;
 }
 

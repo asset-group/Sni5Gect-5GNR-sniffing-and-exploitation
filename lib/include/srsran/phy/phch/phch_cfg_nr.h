@@ -188,6 +188,7 @@ typedef struct SRSRAN_API {
   uint32_t scambling_id; // Identifier used to initialize data scrambling (0-1023)
 
   srsran_mcs_table_t     mcs_table;
+  srsran_mcs_table_t     mcs_table_transform_precoder;
   srsran_dmrs_sch_type_t dmrs_type;
   srsran_dmrs_sch_len_t  dmrs_max_length;
   struct {
@@ -226,7 +227,8 @@ typedef struct SRSRAN_API {
   srsran_csi_rs_nzp_set_t nzp_csi_rs_sets[SRSRAN_PHCH_CFG_MAX_NOF_CSI_RS_SETS];
 
   /// PUSCH only
-  srsran_beta_offsets_t beta_offsets;              /// Semi-static only.
+  srsran_beta_offsets_t beta_offsets; /// Semi-static only.
+  bool                  enable_hopping;
   bool                  enable_transform_precoder; /// Enables transform precoding
   float scaling; /// Indicates a scaling factor to limit the number of resource elements assigned to UCI on PUSCH.
 } srsran_sch_hl_cfg_nr_t;

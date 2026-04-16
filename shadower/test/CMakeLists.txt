@@ -124,3 +124,6 @@ target_link_libraries(sdr_timing_test utils source syncer)
 
 add_executable(sdr_txrx_decode_test hardware/sdr_txrx_decode_test.cc)
 target_link_libraries(sdr_txrx_decode_test utils source syncer wd_worker)
+
+add_executable(asn1_decode_test asn1_decode_test.cc)
+target_link_libraries(asn1_decode_test utils rrc_nr_r17_asn1) 

@@ -1,0 +1,172 @@
+{
+  "c1": {
+    "rrcSetup": {
+      "rrc-TransactionIdentifier": 0,
+      "criticalExtensions": {
+        "rrcSetup": {
+          "radioBearerConfig": {
+            "srb-ToAddModList": [
+              {
+                "srb-Identity": 1
+              }
+            ]
+          },
+          "masterCellGroup": "5c00b001117afc701061e6007c0204683c4200041249819d0091ffff800000010003e258771003000009083714430006d91412010094810128801b810010020024408c0a06a421b10ca0442897841235554941c001040c2050c1c80489c0004184a8060418012540304010614a018306004a500c2004185a8061418012d4030c010618a018706004c500c4034005a806240609634102421812c11cc0000000a9080109a474924281c1821d9c21b863708a6194e3fc5accd6f281c0000205ef40000000001650001b8ca828030155140118008ad500141286f4c8e0402188001c4a1bc8002e0602288001c4a1bc8002e0802188001c4a1bc8102e0a02288001c4a1bc81020800000286181018202c0e0ba00285320000001002000404803105c001005a0000b2170024f16fff841fe02800"
+        }
+      }
+    }
+  }
+},
+{
+  "cellGroupId": 0,
+  "rlc-BearerToAddModList": [
+    {
+      "logicalChannelIdentity": 1,
+      "servedRadioBearer": {
+        "srb-Identity": 1
+      },
+      "rlc-Config": {
+        "am": {
+          "ul-AM-RLC": {
+            "sn-FieldLength": "size12",
+            "t-PollRetransmit": "ms45",
+            "pollPDU": "infinity",
+            "pollByte": "infinity",
+            "maxRetxThreshold": "t32"
+          },
+          "dl-AM-RLC": {
+            "sn-FieldLength": "size12",
+            "t-Reassembly": "ms35",
+            "t-StatusProhibit": "ms0"
+          }
+        }
+      },
+      "mac-LogicalChannelConfig": {
+        "ul-SpecificParameters": {
+          "priority": 1,
+          "prioritisedBitRate": "infinity",
+          "bucketSizeDuration": "ms50",
+          "logicalChannelGroup": 0,
+          "schedulingRequestID": 0,
+          "logicalChannelSR-Mask": false,
+          "logicalChannelSR-DelayTimerApplied": false
+        }
+      }
+    }
+  ],
+  "mac-CellGroupConfig": {
+    "schedulingRequestConfig": {
+      "schedulingRequestToAddModList": [
+        {
+          "schedulingRequestId": 0,
+          "sr-TransMax": "n64"
+        }
+      ]
+    },
+    "bsr-Config": {
+      "periodicBSR-Timer": "sf10",
+      "retxBSR-Timer": "sf80"
+    },
+    "tag-Config": {
+      "tag-ToAddModList": [
+        {
+          "tag-Id": 0,
+          "timeAlignmentTimer": "infinity"
+        }
+      ]
+    },
+    "phr-Config": {
+      {
+        "phr-PeriodicTimer": "sf20",
+        "phr-ProhibitTimer": "sf0",
+        "phr-Tx-PowerFactorChange": "dB3",
+        "multiplePHR": false,
+        "dummy": false,
+        "phr-Type2OtherCell": false,
+        "phr-ModeOtherCG": "real"
+      }
+    },
+    "skipUplinkTxDynamic": false
+  },
+  "physicalCellGroupConfig": {
+    "pdsch-HARQ-ACK-Codebook": "dynamic"
+  },
+  "spCellConfig": {
+    "spCellConfigDedicated": {
+      "initialDownlinkBWP": {
+        "pdcch-Config": {
+          {
+            "controlResourceSetToAddModList": [
+              {
+                "controlResourceSetId": 1,
+                "frequencyDomainResources": "111111111111111110000000000000000000000000000",
+                "duration": 1,
+                "cce-REG-MappingType": {
+                },
+                "precoderGranularity": "sameAsREG-bundle",
+                "tci-StatesPDCCH-ToAddList": [
+                  0
+                ],
+                "pdcch-DMRS-ScramblingID": 63638
+              }
+            ],
+            "searchSpacesToAddModList": [
+              {
+                "searchSpaceId": 4,
+                "controlResourceSetId": 0,
+                "monitoringSlotPeriodicityAndOffset": {
+                },
+                "monitoringSymbolsWithinSlot": "11000000000000",
+                "nrofCandidates": {
+                  "aggregationLevel1": "n0",
+                  "aggregationLevel2": "n0",
+                  "aggregationLevel4": "n1",
+                  "aggregationLevel8": "n1",
+                  "aggregationLevel16": "n0"
+                },
+                "searchSpaceType": {
+                  "common": {
+                    "dci-Format0-0-AndFormat1-0": {
+                    }
+                  }
+                }
+              },
+              {
+                "searchSpaceId": 5,
+                "controlResourceSetId": 1,
+                "monitoringSlotPeriodicityAndOffset": {
+                },
+                "monitoringSymbolsWithinSlot": "11000000000000",
+                "nrofCandidates": {
+                  "aggregationLevel1": "n3",
+                  "aggregationLevel2": "n3",
+                  "aggregationLevel4": "n3",
+                  "aggregationLevel8": "n1",
+                  "aggregationLevel16": "n0"
+                },
+                "searchSpaceType": {
+                  "ue-Specific": {
+                    "dci-Formats": "formats0-1-And-1-1"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "pdsch-Config": {
+        }
+      },
+      "firstActiveDownlinkBWP-Id": 0,
+      "uplinkConfig": {
+        "initialUplinkBWP": {
+        },
+        "firstActiveUplinkBWP-Id": 4
+      },
+      "pdsch-ServingCellConfig": {
+      },
+      "csi-MeasConfig": {
+      },
+      "tag-Id": 0
+    }
+  }
+}

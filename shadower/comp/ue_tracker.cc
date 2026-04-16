@@ -43,16 +43,21 @@ UETracker::~UETracker()
 /* Activate the current UETracker */
 void UETracker::activate(uint16_t rnti_, srsran_rnti_type_t rnti_type_, uint32_t time_advance)
 {
-  rnti             = rnti_;
-  rnti_type        = rnti_type_;
-  name             = "UE-" + std::to_string(rnti);
-  n_timing_advance = time_advance * 16 * 64 / (1 << config.scs_common) + phy_cfg.t_offset;
-  ta_time          = static_cast<double>(n_timing_advance) * Tc;
+  rnti      = rnti_;
+  rnti_type = rnti_type_;
+  name      = "UE-" + std::to_string(rnti);
+  logger.info("TA from RAR: %u", time_advance);
+  n_timing_advance        = time_advance * 16 * 64 / (1 << config.scs_common);
+  n_timing_advance_offset = n_timing_advance + phy_cfg.t_offset;
+  logger.info("NTA from RAR: %d", n_timing_advance);
+  ta_time = static_cast<double>(n_timing_advance_offset) * Tc;
+  msg_segments.clear();
 
   /* Update the rnti for ue dl */
   for (uint32_t i = 0; i < config.n_ue_dl_worker; i++) {
     UEDLWorker* w = ue_dl_workers[i];
     w->set_rnti(rnti, rnti_type);
+    w->set_segments_map(msg_segments);
     w->update_timing_advance = std::bind(&UETracker::update_timing_advance, this, std::placeholders::_1);
   }
   /* Update the rnti for gnb ul */
@@ -96,12 +101,27 @@ void UETracker::deactivate()
 
 void UETracker::update_timing_advance(int32_t ta_command)
 {
-  int32_t n_ta_old = n_timing_advance;
-  n_timing_advance = n_ta_old + ((int32_t)ta_command - 31) * 16 * 64 / (1 << config.scs_common);
-  ta_time          = static_cast<double>(n_timing_advance) * Tc;
+  int32_t n_ta_old             = n_timing_advance;
+  int32_t new_n_timing_advance = n_ta_old + ((int32_t)ta_command - 31) * 16 * 64 / (1 << config.scs_common);
+  if (new_n_timing_advance < 0) {
+    new_n_timing_advance = 0;
+  }
+  logger.info("Received TA: %d NTA_old: %d NTA: %d", ta_command, n_ta_old, new_n_timing_advance);
+  n_timing_advance        = new_n_timing_advance;
+  n_timing_advance_offset = n_timing_advance + phy_cfg.t_offset;
+  ta_time                 = static_cast<double>(n_timing_advance_offset) * Tc;
   for (uint32_t i = 0; i < config.n_gnb_ul_worker; i++) {
     GNBULWorker* w = gnb_ul_workers[i];
     w->set_ta_samples(ta_time);
+  }
+}
+
+/* Apply the TA offset directly */
+void UETracker::update_uplink_offset(int offset)
+{
+  for (uint32_t i = 0; i < config.n_gnb_ul_worker; i++) {
+    GNBULWorker* w = gnb_ul_workers[i];
+    w->set_ta_samples(offset);
   }
 }
 
@@ -158,6 +178,8 @@ bool UETracker::init()
     }
     /* Update the corresponding RX timestamp */
     w->update_rx_timestamp = std::bind(&UETracker::update_last_rx_timestamp, this);
+    /* Receive the updated Offset from the workers */
+    w->update_offset_from_dmrs_feedback = std::bind(&UETracker::update_uplink_offset, this, std::placeholders::_1);
     /* Initialize gnb_ul worker in the work pool */
     gnb_ul_pool.init_worker(i, w, 80);
   }
@@ -178,29 +200,9 @@ bool UETracker::init()
 }
 
 /* Apply the configuration from SIB1 */
-bool UETracker::apply_config_from_sib1(asn1::rrc_nr::sib1_s& sib1)
+bool UETracker::apply_config_from_sib1(asn1::rrc_nr_r17::sib1_s& sib1)
 {
   update_phy_cfg_from_sib1(phy_cfg, sib1);
-  // By default set the t_offset to 25600
-  phy_cfg.t_offset = 25600;
-  if (sib1.serving_cell_cfg_common_present) {
-    if (sib1.serving_cell_cfg_common.n_timing_advance_offset_present) {
-      switch (sib1.serving_cell_cfg_common.n_timing_advance_offset.value) {
-        case asn1::rrc_nr::serving_cell_cfg_common_sib_s::n_timing_advance_offset_opts::n0:
-          phy_cfg.t_offset = 0;
-          break;
-        case asn1::rrc_nr::serving_cell_cfg_common_sib_s::n_timing_advance_offset_opts::n25600:
-          phy_cfg.t_offset = 25600;
-          break;
-        case asn1::rrc_nr::serving_cell_cfg_common_sib_s::n_timing_advance_offset_opts::n39936:
-          phy_cfg.t_offset = 39936;
-          break;
-        default:
-          logger.error("Invalid n_ta_offset option");
-          break;
-      }
-    }
-  }
   if (!update_cfg()) {
     return false;
   }
@@ -220,12 +222,11 @@ bool UETracker::apply_config_from_mib(srsran_mib_nr_t& mib, uint32_t ncellid)
 }
 
 /* Apply the configuration from cell group */
-bool UETracker::apply_config_from_rrc_setup(asn1::rrc_nr::cell_group_cfg_s& cell_group)
+bool UETracker::apply_config_from_rrc_setup(asn1::rrc_nr_r17::cell_group_cfg_s& cell_group)
 {
   /* Update the phy_cfg with the cell group data */
   if (cell_group.sp_cell_cfg_present) {
-    if (!update_phy_cfg_from_cell_cfg(
-            phy_cfg, cell_group.sp_cell_cfg, pucch_res_list, csi_rs_zp_res, csi_rs_nzp_res, logger)) {
+    if (!update_phy_cfg_from_cell_cfg(phy_cfg, cell_group.sp_cell_cfg)) {
       logger.info("Failed to update phy cfg from cell cfg");
       return false;
     }
@@ -233,13 +234,13 @@ bool UETracker::apply_config_from_rrc_setup(asn1::rrc_nr::cell_group_cfg_s& cell
   /* Update the phy_cfg with the phys_cell_group_cfg data */
   if (cell_group.phys_cell_group_cfg_present) {
     switch (cell_group.phys_cell_group_cfg.pdsch_harq_ack_codebook) {
-      case asn1::rrc_nr::phys_cell_group_cfg_s::pdsch_harq_ack_codebook_opts::dynamic_value:
+      case asn1::rrc_nr_r17::phys_cell_group_cfg_s::pdsch_harq_ack_codebook_opts::dyn:
         phy_cfg.harq_ack.harq_ack_codebook = srsran_pdsch_harq_ack_codebook_dynamic;
         break;
-      case asn1::rrc_nr::phys_cell_group_cfg_s::pdsch_harq_ack_codebook_opts::semi_static:
+      case asn1::rrc_nr_r17::phys_cell_group_cfg_s::pdsch_harq_ack_codebook_opts::semi_static:
         phy_cfg.harq_ack.harq_ack_codebook = srsran_pdsch_harq_ack_codebook_semi_static;
         break;
-      case asn1::rrc_nr::phys_cell_group_cfg_s::pdsch_harq_ack_codebook_opts::nulltype:
+      case asn1::rrc_nr_r17::phys_cell_group_cfg_s::pdsch_harq_ack_codebook_opts::nulltype:
         phy_cfg.harq_ack.harq_ack_codebook = srsran_pdsch_harq_ack_codebook_none;
         break;
       default:
@@ -323,8 +324,9 @@ void UETracker::run_thread()
   while (active.load()) {
     /* Retrieve the current tracking rx slot index and timestamp*/
     uint32_t           rx_slot_idx;
+    uint32_t           rx_task_idx;
     srsran_timestamp_t rx_timestamp;
-    syncer->get_tti(&rx_slot_idx, &rx_timestamp);
+    syncer->get_tti(&rx_slot_idx, &rx_task_idx, &rx_timestamp);
 
     std::shared_ptr<std::vector<uint8_t> > ul_new_msg = ul_msg_queue.retrieve_non_blocking();
     if (ul_new_msg != nullptr) {
@@ -333,6 +335,7 @@ void UETracker::run_thread()
       ul_task_ptr->rnti                                     = rnti;
       ul_task_ptr->rnti_type                                = rnti_type;
       ul_task_ptr->rx_slot_idx                              = rx_slot_idx;
+      ul_task_ptr->rx_task_idx                              = rx_task_idx;
       ul_task_ptr->rx_timestamp                             = rx_timestamp;
       ul_task_ptr->msg                                      = ul_new_msg;
       ue_ul_worker->set_context(ul_task_ptr);
@@ -365,6 +368,7 @@ void UETracker::run_thread()
       task.rnti_type                             = rnti_type;
       task.slot_idx                              = target_slot_idx;
       task.rx_tti                                = rx_slot_idx;
+      task.rx_task_idx                           = rx_task_idx;
       task.rx_time                               = rx_timestamp;
       task.msg                                   = current_msg;
       task.mcs                                   = config.pdsch_mcs;

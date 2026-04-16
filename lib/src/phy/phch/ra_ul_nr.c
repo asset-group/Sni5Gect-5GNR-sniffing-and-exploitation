@@ -118,8 +118,24 @@ static bool check_time_ra_typeA(uint32_t* S, uint32_t* L)
 
 static bool check_time_ra_typeB(uint32_t* S, uint32_t* L)
 {
-  ERROR("Not implemented");
-  return false;
+  if (*S > 12) {
+    ERROR("S (%d) is out-of-range {0, 12}", *S);
+    return false;
+  }
+  if (*L < 1 || *L > 14) {
+    ERROR("L (%d) is out-of-range {1,14}", *L);
+    return false;
+  }
+  uint32_t sum = *S + *L;
+  if (sum > 27) {
+    ERROR("The sum of S (%d) and L (%d) is greater than 27", *S, *L);
+    return false;
+  }
+  if (sum < 1) {
+    ERROR("The sum of S (%d) and L (%d) is lesser than 1", *S, *L);
+    return false;
+  }
+  return true;
 }
 
 bool srsran_ra_ul_nr_time_validate(srsran_sch_grant_nr_t* grant)

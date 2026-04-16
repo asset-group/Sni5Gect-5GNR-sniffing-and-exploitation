@@ -131,7 +131,8 @@ bool find_aggregation_level(srsran_dci_ctx_t&      dci_ctx,
     if (n == 0) {
       continue;
     }
-    for (uint32_t ncce_idx = 0; ncce_idx < n; ncce_idx++) {
+    const uint32_t nof_locations = static_cast<uint32_t>(n);
+    for (uint32_t ncce_idx = 0; ncce_idx < nof_locations; ncce_idx++) {
       dci_ctx.location.L    = agl;
       dci_ctx.location.ncce = dci_locations[ncce_idx];
       return true;

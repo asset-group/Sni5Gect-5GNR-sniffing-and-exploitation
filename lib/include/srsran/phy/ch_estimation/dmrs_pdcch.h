@@ -119,8 +119,10 @@ SRSRAN_API void srsran_dmrs_pdcch_estimator_free(srsran_dmrs_pdcch_estimator_t* 
  * @param[in] sf_symbols Received resource grid.
  * @return SRSRAN_SUCCESS if the configurations are valid, otherwise it returns an SRSRAN_ERROR code
  */
-SRSRAN_API int
-srsran_dmrs_pdcch_estimate(srsran_dmrs_pdcch_estimator_t* q, const srsran_slot_cfg_t* slot_cfg, const cf_t* sf_symbols);
+SRSRAN_API int srsran_dmrs_pdcch_estimate(srsran_dmrs_pdcch_estimator_t* q,
+                                          const srsran_slot_cfg_t*       slot_cfg,
+                                          const cf_t*                    sf_symbols,
+                                          uint32_t                       start_symbol);
 
 /**
  * @brief PDSCH DMRS measurement results

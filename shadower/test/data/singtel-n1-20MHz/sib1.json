@@ -1,0 +1,249 @@
+{
+  "cellSelectionInfo": {
+    "q-RxLevMin": -70
+  },
+  "cellAccessRelatedInfo": {
+    "plmn-IdentityInfoList": [
+      {
+        "plmn-IdentityList": [
+          {
+            "mcc": [
+              5,
+              2,
+              5
+            ],
+            "mnc": [
+              0,
+              1
+            ]
+          }
+        ],
+        "trackingAreaCode": "000000000000001100110000",
+        "cellIdentity": "000111110101010011011110001111111111",
+        "cellReservedForOperatorUse": "notReserved"
+      }
+    ]
+  },
+  "si-SchedulingInfo": {
+    "schedulingInfoList": [
+      {
+        "si-BroadcastStatus": "broadcasting",
+        "si-Periodicity": "rf64",
+        "sib-MappingInfo": [
+          {
+            "type": "sibType2",
+            "valueTag": 0
+          },
+          {
+            "type": "sibType4",
+            "valueTag": 1
+          },
+          {
+            "type": "sibType5",
+            "valueTag": 0
+          }
+        ]
+      }
+    ],
+    "si-WindowLength": "s20"
+  },
+  "servingCellConfigCommon": {
+    "downlinkConfigCommon": {
+      "frequencyInfoDL": {
+        "frequencyBandList": [
+          {
+            "freqBandIndicatorNR": 1
+          },
+          {
+            "freqBandIndicatorNR": 65
+          }
+        ],
+        "offsetToPointA": 42,
+        "scs-SpecificCarrierList": [
+          {
+            "offsetToCarrier": 0,
+            "subcarrierSpacing": "kHz15",
+            "carrierBandwidth": 106
+          }
+        ]
+      },
+      "initialDownlinkBWP": {
+        "genericParameters": {
+          "locationAndBandwidth": 28875,
+          "subcarrierSpacing": "kHz15"
+        },
+        "pdcch-ConfigCommon": {
+          {
+            "commonSearchSpaceList": [
+              {
+                "searchSpaceId": 1,
+                "controlResourceSetId": 0,
+                "monitoringSlotPeriodicityAndOffset": {
+                },
+                "monitoringSymbolsWithinSlot": "10000000000000",
+                "nrofCandidates": {
+                  "aggregationLevel1": "n0",
+                  "aggregationLevel2": "n0",
+                  "aggregationLevel4": "n0",
+                  "aggregationLevel8": "n1",
+                  "aggregationLevel16": "n0"
+                },
+                "searchSpaceType": {
+                  "common": {
+                    "dci-Format0-0-AndFormat1-0": {
+                    }
+                  }
+                }
+              }
+            ],
+            "searchSpaceSIB1": 0,
+            "searchSpaceOtherSystemInformation": 1,
+            "pagingSearchSpace": 1,
+            "ra-SearchSpace": 1
+          }
+        },
+        "pdsch-ConfigCommon": {
+          {
+            "pdsch-TimeDomainAllocationList": [
+              {
+                "k0": 0,
+                "mappingType": "typeA",
+                "startSymbolAndLength": 40
+              }
+            ]
+          }
+        }
+      },
+      "bcch-Config": {
+        "modificationPeriodCoeff": "n2"
+      },
+      "pcch-Config": {
+        "defaultPagingCycle": "rf128",
+        "nAndPagingFrameOffset": {
+        },
+        "ns": "one",
+        "firstPDCCH-MonitoringOccasionOfPO": {
+          "sCS15KHZoneT": [
+            6
+          ]
+        }
+      }
+    },
+    "uplinkConfigCommon": {
+      "frequencyInfoUL": {
+        "frequencyBandList": [
+          {
+            "freqBandIndicatorNR": 1
+          },
+          {
+            "freqBandIndicatorNR": 65
+          }
+        ],
+        "absoluteFrequencyPointA": 387092,
+        "scs-SpecificCarrierList": [
+          {
+            "offsetToCarrier": 0,
+            "subcarrierSpacing": "kHz15",
+            "carrierBandwidth": 106
+          }
+        ],
+        "p-Max": 23
+      },
+      "initialUplinkBWP": {
+        "genericParameters": {
+          "locationAndBandwidth": 28875,
+          "subcarrierSpacing": "kHz15"
+        },
+        "rach-ConfigCommon": {
+          {
+            "rach-ConfigGeneric": {
+              "prach-ConfigurationIndex": 17,
+              "msg1-FDM": "one",
+              "msg1-FrequencyStart": 3,
+              "zeroCorrelationZoneConfig": 10,
+              "preambleReceivedTargetPower": -110,
+              "preambleTransMax": "n10",
+              "powerRampingStep": "dB4",
+              "ra-ResponseWindow": "sl10"
+            },
+            "totalNumberOfRA-Preambles": 17,
+            "ssb-perRACH-OccasionAndCB-PreamblesPerSSB": {
+              "one": "n16"
+            },
+            "ra-ContentionResolutionTimer": "sf16",
+            "prach-RootSequenceIndex": {
+              "l839": 438
+            },
+            "restrictedSetConfig": "unrestrictedSet"
+          }
+        },
+        "pusch-ConfigCommon": {
+          {
+            "groupHoppingEnabledTransformPrecoding": "enabled",
+            "pusch-TimeDomainAllocationList": [
+              {
+                "k2": 1,
+                "mappingType": "typeA",
+                "startSymbolAndLength": 27
+              },
+              {
+                "k2": 2,
+                "mappingType": "typeA",
+                "startSymbolAndLength": 27
+              },
+              {
+                "k2": 3,
+                "mappingType": "typeA",
+                "startSymbolAndLength": 27
+              },
+              {
+                "k2": 4,
+                "mappingType": "typeA",
+                "startSymbolAndLength": 27
+              }
+            ],
+            "msg3-DeltaPreamble": 6,
+            "p0-NominalWithGrant": -94
+          }
+        },
+        "pucch-ConfigCommon": {
+          {
+            "pucch-ResourceCommon": 12,
+            "pucch-GroupHopping": "enable",
+            "hoppingId": 191,
+            "p0-nominal": -114
+          }
+        }
+      },
+      "timeAlignmentTimerCommon": "infinity"
+    },
+    "n-TimingAdvanceOffset": "n25600",
+    "ssb-PositionsInBurst": {
+      "inOneGroup": "10000000"
+    },
+    "ssb-PeriodicityServingCell": "ms20",
+    "ss-PBCH-BlockPower": 20
+  },
+  "ue-TimersAndConstants": {
+    "t300": "ms1000",
+    "t301": "ms400",
+    "t310": "ms2000",
+    "n310": "n20",
+    "t311": "ms3000",
+    "n311": "n1",
+    "t319": "ms400"
+  },
+  "nonCriticalExtension": {
+    "nonCriticalExtension": {
+      "nonCriticalExtension": {
+        "redCap-ConfigCommon-r17": {
+          "cellBarredRedCap-r17": {
+            "cellBarredRedCap1Rx-r17": "notBarred",
+            "cellBarredRedCap2Rx-r17": "notBarred"
+          }
+        },
+        "intraFreqReselectionRedCap-r17": "allowed"
+      }
+    }
+  }
+}

@@ -1,15 +1,18 @@
 #ifndef MSG_HELPER_H
 #define MSG_HELPER_H
-#include "srsran/asn1/rrc_nr.h"
+#include "srsran/asn1/rrc_nr/cell_group_config.h"
+#include "srsran/asn1/rrc_nr/dl_ccch_msg.h"
+#include "srsran/asn1/rrc_nr/dl_dcch_msg.h"
+#include "srsran/asn1/rrc_nr/ul_ccch_msg.h"
 #include "srsran/common/byte_buffer.h"
 #include "srsran/mac/mac_sch_pdu_nr.h"
 #include <string>
 
 /* Put the nas message in to dl_dcch_msg */
-asn1::rrc_nr::dl_dcch_msg_s pack_nas_to_dl_dcch(const std::string& nas_msg);
+asn1::rrc_nr_r17::dl_dcch_msg_s pack_nas_to_dl_dcch(const std::string& nas_msg);
 
 /* Put the dl_dcch msg into rrc nr and encode it */
-bool pack_dl_dcch_to_rrc_nr(srsran::unique_byte_buffer_t& buffer, const asn1::rrc_nr::dl_dcch_msg_s& dl_dcch_msg);
+bool pack_dl_dcch_to_rrc_nr(srsran::unique_byte_buffer_t& buffer, const asn1::rrc_nr_r17::dl_dcch_msg_s& dl_dcch_msg);
 
 void pack_rrc_nr_to_rlc_nr(uint8_t*                      rrc_nr_msg,
                            uint32_t                      rrc_nr_len,
@@ -43,10 +46,4 @@ bool modify_monitoring_symbol_within_slot(uint8_t*              dl_ccch_msg_raw,
                                           uint32_t              dl_ccch_msg_len,
                                           const std::string     symbol,
                                           std::vector<uint8_t>& modified_dl_ccch_msg);
-
-/* Decode dl_ccch_msg_s bytes to asn1 structure */
-bool parse_to_dl_ccch_msg(uint8_t* data, uint32_t len, asn1::rrc_nr::dl_ccch_msg_s& dl_ccch_msg);
-
-/* extract cell_group struct from rrc_setup */
-bool extract_cell_group_cfg(asn1::rrc_nr::dl_ccch_msg_s& dl_ccch_msg, asn1::rrc_nr::cell_group_cfg_s& cell_group);
 #endif // MSG_HELPER_H

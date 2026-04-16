@@ -1,12 +1,11 @@
 #include "shadower/comp/workers/wd_worker.h"
 #include "shadower/modules/dummy_exploit.h"
 #include "shadower/utils/utils.h"
-#include "srsran/asn1/rrc_nr.h"
 #include "srsran/mac/mac_sch_pdu_nr.h"
 #include "srsran/phy/phch/pbch_msg_nr.h"
 #include "srsran/phy/ue/ue_dl_nr.h"
 #include "test_variables.h"
-
+#include <unistd.h>
 std::string sample_file;
 uint32_t    slot_number;
 uint32_t    half = 0;
@@ -63,11 +62,43 @@ int main(int argc, char* argv[])
       slot_number = 17;
       half        = 0;
       break;
+    case 5:
+      sample_file = "shadower/test/data/singtel-n1-20MHz/pdsch_9426.fc32";
+      slot_number = 6;
+      // sample_file = "shadower/test/data/singtel-n1-20MHz/pdsch_9427.fc32";
+      // slot_number = 7;
+      // sample_file = "shadower/test/data/singtel-n1-20MHz/pdsch_9428.fc32";
+      // slot_number = 8;
+      // sample_file = "shadower/test/data/singtel-n1-20MHz/pdsch_9429.fc32";
+      // slot_number = 9;
+      // sample_file = "shadower/test/data/singtel-n1-20MHz/pdsch_9430.fc32";
+      // slot_number = 10;
+      // sample_file = "shadower/test/data/singtel-n1-20MHz/pdsch_9464.fc32";
+      // slot_number = 4;
+      half = 0;
+      break;
     case 6:
-      // sample_file = "shadower/test/data/srsran-n5-10MHz/pdsch_10056.fc32";
-      // slot_number = 16;
-      sample_file = "shadower/test/data/srsran-n5-10MHz/pdsch_617.fc32";
-      slot_number = 17;
+      sample_file = "shadower/test/data/srsran-n5-10MHz/pdsch-2834.fc32";
+      slot_number = 14;
+      // sample_file             = "shadower/test/data/srsran-n5-10MHz/pdsch-3214.fc32";
+      // slot_number             = 14;
+      // args.cell_group_cfg_raw = "5c02b091117aec701065e000b1c034c55fc8120d05900408c00824110120008023404490f8381df81"
+      //                           "821d1100040029800008a601138e40300";
+      half = 0;
+      break;
+    case 7:
+      sample_file = "shadower/test/data/oai-n78-40mhz-3427.5/pdsch-14066.fc32";
+      slot_number = 6;
+      half        = 0;
+      break;
+    case 8:
+      sample_file = "shadower/test/data/cyberx-n78-40MHz/pdsch-15820.fc32";
+      slot_number = 15820;
+      half        = 0;
+      break;
+    case 10:
+      sample_file = "shadower/test/data/starhub-n1-20MHz/pdsch-9309.fc32";
+      slot_number = 9309;
       half        = 0;
       break;
     default:
@@ -105,6 +136,14 @@ int main(int argc, char* argv[])
   if (!configure_phy_cfg_from_rrc_setup(phy_cfg, args.rrc_setup_raw, args.rrc_setup_size, logger)) {
     logger.error("Failed to configure phy cfg from rrc setup");
     return -1;
+  }
+
+  /* load rrc reconfiguration configuration and apply to phy_cfg */
+  if (args.cell_group_cfg_raw.size() > 0) {
+    if (!configure_phy_cfg_from_cell_group_cfg(phy_cfg, args.cell_group_cfg_raw)) {
+      logger.error("Failed to configure phy cfg from cell group config");
+      return -1;
+    }
   }
 
   /* UE DL init with configuration from phy_cfg */
@@ -203,7 +242,7 @@ int main(int argc, char* argv[])
 
     switch (subpdu.get_lcid()) {
       case srsran::mac_sch_subpdu_nr::nr_lcid_sch_t::CCCH: {
-        asn1::rrc_nr::dl_ccch_msg_s dl_ccch_msg;
+        asn1::rrc_nr_r17::dl_ccch_msg_s dl_ccch_msg;
         if (!parse_to_dl_ccch_msg(subpdu.get_sdu(), subpdu.get_sdu_length(), dl_ccch_msg)) {
           logger.error("Failed to parse DL-CCCH message");
           return -1;
@@ -234,19 +273,19 @@ int main(int argc, char* argv[])
           continue;
         }
         /* Decode the message to DL_DCCH_msg*/
-        asn1::rrc_nr::dl_dcch_msg_s dl_dcch_msg;
-        asn1::cbit_ref              bref(am_data, sdu_len);
-        asn1::SRSASN_CODE           err = dl_dcch_msg.unpack(bref);
+        asn1::rrc_nr_r17::dl_dcch_msg_s dl_dcch_msg;
+        asn1::cbit_ref                  bref(am_data, sdu_len);
+        asn1::SRSASN_CODE               err = dl_dcch_msg.unpack(bref);
         if (err != asn1::SRSASN_SUCCESS) {
           logger.error("Error unpacking DL-DCCH message");
           return -1;
         }
         /* rrc reconfiguration */
-        if (dl_dcch_msg.msg.type().value == asn1::rrc_nr::dl_dcch_msg_type_c::types_opts::c1) {
-          if (dl_dcch_msg.msg.c1().type() == asn1::rrc_nr::dl_dcch_msg_type_c::c1_c_::types::rrc_recfg) {
-            asn1::rrc_nr::rrc_recfg_s& rrc_recfg = dl_dcch_msg.msg.c1().rrc_recfg();
+        if (dl_dcch_msg.msg.type().value == asn1::rrc_nr_r17::dl_dcch_msg_type_c::types_opts::c1) {
+          if (dl_dcch_msg.msg.c1().type() == asn1::rrc_nr_r17::dl_dcch_msg_type_c::c1_c_::types::rrc_recfg) {
+            asn1::rrc_nr_r17::rrc_recfg_s& rrc_recfg = dl_dcch_msg.msg.c1().rrc_recfg();
             if (rrc_recfg.crit_exts.rrc_recfg().non_crit_ext_present) {
-              asn1::rrc_nr::cell_group_cfg_s cell_group_cfg;
+              asn1::rrc_nr_r17::cell_group_cfg_s cell_group_cfg;
               asn1::cbit_ref bref_cg(rrc_recfg.crit_exts.rrc_recfg().non_crit_ext.master_cell_group.data(),
                                      rrc_recfg.crit_exts.rrc_recfg().non_crit_ext.master_cell_group.size());
               if (cell_group_cfg.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {

@@ -156,7 +156,7 @@ void sender_thread(srslog::basic_logger& logger,
                    ShadowerConfig&       config)
 {
   cf_t* channels_ptr[SRSRAN_MAX_CHANNELS];
-  for (int i = 0; i < SRSRAN_MAX_CHANNELS; i++) {
+  for (uint32_t i = 0; i < SRSRAN_MAX_CHANNELS; i++) {
     if (i < source->nof_channels) {
       channels_ptr[i] = samples.data();
     } else {
@@ -175,8 +175,9 @@ void sender_thread(srslog::basic_logger& logger,
     }
     /* Get the timestamp from syncer */
     uint32_t           slot_idx = 0;
+    uint32_t           task_idx = 0;
     srsran_timestamp_t ts       = {};
-    syncer->get_tti(&slot_idx, &ts);
+    syncer->get_tti(&slot_idx, &task_idx, &ts);
     if (slot_idx % slot_per_frame != 4) {
       continue;
     }

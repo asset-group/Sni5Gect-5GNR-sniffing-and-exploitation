@@ -55,6 +55,11 @@ bool gnb_ul_pusch_decode(srsran_gnb_ul_t&        gnb_ul,
     }
     return false;
   }
+
+  /* Get the delay information estimated from DMRS */
+  pusch_res.delay_us = gnb_ul.dmrs.csi.delay_us;
+  pusch_res.snr_dB   = gnb_ul.dmrs.csi.snr_dB;
+
   /* pusch and softbuffer initialization */
   srsran_softbuffer_rx_reset(&softbuffer_rx);
   pusch_cfg.grant.tb[0].softbuffer.rx = &softbuffer_rx;

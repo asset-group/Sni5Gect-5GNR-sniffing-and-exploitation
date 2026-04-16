@@ -8,6 +8,7 @@
 #include "srsran/phy/ue/ue_dl_nr.h"
 #include "test_variables.h"
 #include <fstream>
+#include <unistd.h>
 
 std::string ul_sample_file;
 std::string last_sample_file;
@@ -15,7 +16,7 @@ uint32_t    ul_slot_number;
 std::string dci_sample_file;
 uint32_t    dci_slot_number;
 uint32_t    half;
-uint32_t    ul_offset = 0;
+int         ul_offset = 0;
 
 void parse_args(int argc, char* argv[])
 {
@@ -116,24 +117,85 @@ int main(int argc, char* argv[])
     //   half             = 0;
     //   ul_offset        = 480;
     //   break;
-    case 6:
-      // dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci_10030.fc32";
-      // dci_slot_number  = 10;
-      // ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch_10034.fc32";
-      // ul_slot_number   = 14;
-      // last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch_10033.fc32";
-      half      = 0;
-      ul_offset = 0;
-      // dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci_605.fc32";
+    case 5:
+      dci_sample_file  = "shadower/test/data/singtel-n1-20MHz/dci-6758.fc32";
+      dci_slot_number  = 18;
+      ul_sample_file   = "shadower/test/data/singtel-n1-20MHz/pusch-6760.fc32";
+      ul_slot_number   = 0;
+      last_sample_file = "shadower/test/data/singtel-n1-20MHz/pusch-6759.fc32";
+
+      // dci_sample_file  = "shadower/test/data/singtel-n1-20MHz/dci-6764.fc32";
+      // dci_slot_number  = 4;
+      // ul_sample_file   = "shadower/test/data/singtel-n1-20MHz/pusch-6766.fc32";
+      // ul_slot_number   = 6;
+      // last_sample_file = "shadower/test/data/singtel-n1-20MHz/pusch-6765.fc32";
+
+      // dci_sample_file  = "shadower/test/data/singtel-n1-20MHz/dci-6765.fc32";
       // dci_slot_number  = 5;
-      // ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch_609.fc32";
+      // ul_sample_file   = "shadower/test/data/singtel-n1-20MHz/pusch-6767.fc32";
+      // ul_slot_number   = 7;
+      // last_sample_file = "shadower/test/data/singtel-n1-20MHz/pusch-6766.fc32";
+
+      // dci_sample_file  = "shadower/test/data/singtel-n1-20MHz/dci-6773.fc32";
+      // dci_slot_number  = 13;
+      // ul_sample_file   = "shadower/test/data/singtel-n1-20MHz/pusch-6775.fc32";
+      // ul_slot_number   = 15;
+      // last_sample_file = "shadower/test/data/singtel-n1-20MHz/pusch-6774.fc32";
+
+      // dci_sample_file  = "shadower/test/data/singtel-n1-20MHz/dci-6774.fc32";
+      // dci_slot_number  = 14;
+      // ul_sample_file   = "shadower/test/data/singtel-n1-20MHz/pusch-6776.fc32";
+      // ul_slot_number   = 16;
+      // last_sample_file = "shadower/test/data/singtel-n1-20MHz/pusch-6775.fc32";
+
+      // dci_sample_file  = "shadower/test/data/singtel-n1-20MHz/dci-6787.fc32";
+      // dci_slot_number  = 7;
+      // ul_sample_file   = "shadower/test/data/singtel-n1-20MHz/pusch-6789.fc32";
       // ul_slot_number   = 9;
-      // last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch_608.fc32";
-      dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci_625.fc32";
+      // last_sample_file = "shadower/test/data/singtel-n1-20MHz/pusch-6788.fc32";
+
+      // dci_sample_file  = "shadower/test/data/singtel-n1-20MHz/dci-6803.fc32";
+      // dci_slot_number  = 3;
+      // ul_sample_file   = "shadower/test/data/singtel-n1-20MHz/pusch-6805.fc32";
+      // ul_slot_number   = 5;
+      // last_sample_file = "shadower/test/data/singtel-n1-20MHz/pusch-6804.fc32";
+
+      half      = 0;
+      ul_offset = 324;
+      break;
+    case 6:
+      dci_sample_file  = "shadower/test/data/srsran-n5-10MHz/dci-2845.fc32";
       dci_slot_number  = 5;
-      ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch_629.fc32";
+      ul_sample_file   = "shadower/test/data/srsran-n5-10MHz/pusch-2849.fc32";
       ul_slot_number   = 9;
-      last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch_628.fc32";
+      last_sample_file = "shadower/test/data/srsran-n5-10MHz/pusch-2849.fc32";
+      // dci_sample_file         = "shadower/test/data/srsran-n5-10MHz/dci-3334.fc32";
+      // dci_slot_number         = 14;
+      // ul_sample_file          = "shadower/test/data/srsran-n5-10MHz/pusch-3338.fc32";
+      // ul_slot_number          = 18;
+      // last_sample_file        = "shadower/test/data/srsran-n5-10MHz/pusch-3337.fc32";
+      // args.cell_group_cfg_raw = "5c02b091117aec701065e000b1c034c55fc8120d05900408c00824110120008023404490f8381df81"
+      //                           "821d1100040029800008a601138e40300";
+      // half                    = 0;
+      // ul_offset               = 312;
+      break;
+    case 7:
+      dci_sample_file  = "shadower/test/data/oai-n78-40mhz-3427.5/dci-14044.fc32";
+      dci_slot_number  = 4;
+      ul_sample_file   = "shadower/test/data/oai-n78-40mhz-3427.5/pusch-14046.fc32";
+      last_sample_file = ul_sample_file;
+      ul_slot_number   = 6;
+      half             = 1;
+      ul_offset        = 612;
+      break;
+    case 8:
+      dci_sample_file  = "shadower/test/data/cyberx-n78-40MHz/dci-16952.fc32";
+      dci_slot_number  = 16952;
+      ul_sample_file   = "shadower/test/data/cyberx-n78-40MHz/pusch-16954.fc32";
+      ul_slot_number   = 16954;
+      last_sample_file = dci_sample_file;
+      half             = 0;
+      ul_offset        = 612;
       break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
@@ -173,6 +235,14 @@ int main(int argc, char* argv[])
     return -1;
   }
 
+  /* load rrc reconfiguration configuration and apply to phy_cfg */
+  if (args.cell_group_cfg_raw.size() > 0) {
+    if (!configure_phy_cfg_from_cell_group_cfg(phy_cfg, args.cell_group_cfg_raw)) {
+      logger.error("Failed to configure phy cfg from cell group config");
+      return -1;
+    }
+  }
+
   /* UE DL init with configuration from phy_cfg */
   srsran_ue_dl_nr_t ue_dl        = {};
   cf_t*             ue_dl_buffer = srsran_vec_cf_malloc(args.sf_len);
@@ -197,7 +267,7 @@ int main(int argc, char* argv[])
   }
 
   /* Extract dci slot number from the file name */
-  for (int i = 0; i < args.slot_per_sf; i++) {
+  for (uint32_t i = 0; i < args.slot_per_sf; i++) {
     /* copy samples to ue_dl processing buffer */
     srsran_vec_cf_copy(ue_dl_buffer, dci_samples.data() + args.slot_len * i, args.slot_len);
     /* Initialize slot cfg */
@@ -290,6 +360,7 @@ int main(int argc, char* argv[])
     logger.error("Error running gnb_ul_pusch_decode");
     return -1;
   }
+  logger.info("PUSCH DMRS estimation: iq=%f, snr=%.2f dB", pusch_res.delay_us * config.sample_rate, pusch_res.snr_dB);
 
   /* if the message is not decoded correctly, then return */
   if (!pusch_res.tb[0].crc) {

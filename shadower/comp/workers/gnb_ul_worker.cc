@@ -182,6 +182,14 @@ void GNBULWorker::handle_pusch(srsran_slot_cfg_t& slot_cfg)
     logger.debug("Error PUSCH got wrong CRC");
     return;
   }
+  double   delay_offset   = pusch_res.delay_us * config.sample_rate;
+  uint32_t old_ta_samples = ta_samples;
+  if (std::abs(delay_offset) > 1 && ta_samples - delay_offset > 0) {
+    uint32_t new_ta_samples = ta_samples - delay_offset;
+    logger.info("Update the uplink message offset based on DMRS feedback %u => %u", ta_samples, new_ta_samples);
+    update_offset_from_dmrs_feedback(new_ta_samples);
+  }
+
   /* Write to pcap */
   pcap_writer->write_ul_crnti_nr(data->msg, data->N_bytes, task->task_idx, 0, slot_cfg.idx);
   /* Pass the decoded to wdissector */
@@ -193,4 +201,32 @@ void GNBULWorker::handle_pusch(srsran_slot_cfg_t& slot_cfg)
                      slot_cfg.idx,
                      UL,
                      exploit);
+  if (config.expose_data) {
+    uplink_api_hdr_t api_hdr         = {};
+    api_hdr.message_type             = 1; // Uplink API message
+    api_hdr.rnti                     = rnti;
+    api_hdr.rnti_type                = (uint16_t)rnti_type;
+    api_hdr.slot_idx                 = slot_cfg.idx;
+    api_hdr.task_idx                 = task->task_idx;
+    api_hdr.sf_len                   = sf_len;
+    api_hdr.offset                   = ta_samples;
+    srsran_timestamp_t toa_estimated = {};
+    srsran_timestamp_copy(&toa_estimated, &task->ts);
+    srsran_timestamp_sub(&toa_estimated, 0, SF_DURATION + ta_samples / srate);
+    api_hdr.full_secs    = toa_estimated.full_secs;
+    api_hdr.frac_secs    = toa_estimated.frac_secs;
+    api_hdr.time_diff    = (double)old_ta_samples / srate - pusch_res.delay_us;
+    api_hdr.nof_prb      = gnb_ul.carrier.nof_prb;
+    api_hdr.start_symbol = pusch_cfg.grant.S;
+    api_hdr.nof_symbol   = pusch_cfg.grant.L;
+    api_hdr.snr_dB       = pusch_res.snr_dB;
+    for (uint32_t i = 0; i < api_hdr.nof_prb; i++) {
+      api_hdr.prb_map[i] = pusch_cfg.grant.prb_idx[i];
+    }
+    if (ul_api != nullptr && ul_api->is_initialized()) {
+      if (ul_api->send_uplink_api_message(api_hdr, task->ul_buffer[0]->data(), task->last_ul_buffer[0]->data()) < 0) {
+        logger.error("Failed to send uplink API message for RNTI: %u", rnti);
+      }
+    }
+  }
 }

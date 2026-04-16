@@ -36,16 +36,21 @@ add_test(shd_broadcast_worker_rar_test_40MHz
     -m ${CMAKE_SOURCE_DIR}/shadower/test/data/srsran-n78-40MHz/mib.raw
 )
 
+add_library(ws_filter ws_filter.cc)
+target_link_libraries(ws_filter wireshark_epan wireshark_wiretap wireshark_wsutil ${GLIB_LIBRARIES})
+target_include_directories(ws_filter PUBLIC ${WIRESHARK_EPAN_INCLUDES} ${GLIB_INCLUDE_DIRS})
+set_target_properties(ws_filter PROPERTIES BUILD_RPATH ${WIRESHARK_RUN_PATH})
+
 add_library(wd_worker wd_worker.cc)
-target_link_libraries(wd_worker wdissector srslog)
-target_include_directories(wd_worker PUBLIC ${WDISSECTOR_PATH}/src ${WDISSECTOR_INCLUDES})
+target_link_libraries(wd_worker wireshark_epan wireshark_wiretap wireshark_wsutil ${GLIB_LIBRARIES} srslog utils ws_filter)
+target_include_directories(wd_worker PUBLIC ${WIRESHARK_EPAN_INCLUDES} ${GLIB_INCLUDE_DIRS})
+set_target_properties(wd_worker PROPERTIES BUILD_RPATH ${WIRESHARK_RUN_PATH})
 
 add_executable(wd_worker_test tests/wd_worker_test.cc)
-target_link_libraries(wd_worker_test wd_worker utils)
+target_link_libraries(wd_worker_test wd_worker ws_filter utils)
 
 add_library(ue_dl_worker ue_dl_worker.cc)
 target_link_libraries(ue_dl_worker utils srsran_mac wd_worker)
-target_include_directories(ue_dl_worker PUBLIC ${WDISSECTOR_PATH}/src ${WDISSECTOR_INCLUDES})
 if(ENABLE_CUDA)
     target_link_libraries(ue_dl_worker fft_processor)
 endif(ENABLE_CUDA)
@@ -63,8 +68,7 @@ add_test(shd_ue_dl_worker_test_20MHz
 set_tests_properties(shd_ue_dl_worker_test_20MHz PROPERTIES WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 add_library(gnb_ul_worker gnb_ul_worker.cc)
-target_link_libraries(gnb_ul_worker utils srsran_mac wd_worker)
-target_include_directories(gnb_ul_worker PUBLIC ${WDISSECTOR_PATH}/src ${WDISSECTOR_INCLUDES})
+target_link_libraries(gnb_ul_worker utils srsran_mac wd_worker apis)
 if(ENABLE_CUDA)
     target_link_libraries(gnb_ul_worker fft_processor)
 endif(ENABLE_CUDA)

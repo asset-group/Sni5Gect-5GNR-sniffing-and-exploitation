@@ -127,7 +127,7 @@ bool BroadCastWorker::pdsch_decode(uint32_t slot_idx, uint32_t task_idx)
  */
 bool BroadCastWorker::decode_sib1(srsran::unique_byte_buffer_t& data)
 {
-  asn1::rrc_nr::sib1_s sib1_;
+  asn1::rrc_nr_r17::sib1_s sib1_;
   if (!parse_to_sib1(data->msg, data->N_bytes, sib1_)) {
     logger.error("Error decoding SIB1");
     return false;
@@ -154,18 +154,25 @@ bool BroadCastWorker::decode_rar(srsran::unique_byte_buffer_t& data, uint32_t sl
     logger.error("No subpdus in RAR");
     return false;
   }
-  const srsran::mac_rar_subpdu_nr& subpdu  = rar_pdu.get_subpdu(0);
-  uint16_t                         tc_rnti = subpdu.get_temp_crnti();
-  if (tc_rnti == SRSRAN_INVALID_RNTI) {
-    logger.error("Invalid TC-RNTI");
-    return false;
+  for (uint32_t i = 0; i < num_subpdus; i++) {
+    srsran::mac_rar_subpdu_nr subpdu = rar_pdu.get_subpdu(i);
+    if (subpdu.has_rapid()) {
+      /* Extract the rnti */
+      uint16_t tc_rnti = subpdu.get_temp_crnti();
+      if (tc_rnti == SRSRAN_INVALID_RNTI) {
+        logger.error("Invalid RNTI in RAR");
+        return -1;
+      }
+      logger.info(CYAN "Found new UE with tc-rnti: %d slot: %u task: %u" RESET, tc_rnti, slot_idx, task_idx);
+      /* Extract the time advance info */
+      uint32_t time_advance = subpdu.get_ta();
+      /* Extract the UL grant */
+      std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS> rar_grant = subpdu.get_ul_grant();
+      on_ue_found(tc_rnti, rar_grant, slot_idx, time_advance);
+      return true;
+    }
   }
-  uint32_t time_advance = subpdu.get_ta();
-
-  logger.info(CYAN "Found new UE with tc-rnti: %d slot: %u task: %u" RESET, tc_rnti, slot_idx, task_idx);
-  std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS> rar_grant = subpdu.get_ul_grant();
-  on_ue_found(tc_rnti, rar_grant, slot_idx, time_advance);
-  return true;
+  return false;
 }
 
 bool BroadCastWorker::apply_config_from_mib(srsran_mib_nr_t& mib_, uint32_t ncellid_)
@@ -185,7 +192,7 @@ bool BroadCastWorker::apply_config_from_mib(srsran_mib_nr_t& mib_, uint32_t ncel
   return true;
 }
 
-bool BroadCastWorker::apply_config_from_sib1(asn1::rrc_nr::sib1_s& sib1_)
+bool BroadCastWorker::apply_config_from_sib1(asn1::rrc_nr_r17::sib1_s& sib1_)
 {
   sib1 = std::move(sib1_);
   update_phy_cfg_from_sib1(phy_cfg, sib1);

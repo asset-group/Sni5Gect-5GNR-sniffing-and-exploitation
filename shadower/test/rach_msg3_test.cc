@@ -50,6 +50,46 @@ int main(int argc, char* argv[])
       ul_sample_offset   = 480;
       half               = 0;
       break;
+    case 5:
+      sample_file        = "shadower/test/data/singtel-n1-20MHz/rach_msg3.fc32";
+      last_sample_file   = "shadower/test/data/singtel-n1-20MHz/rach_msg3-last.fc32";
+      rach_msg2_slot_idx = 8;
+      rach_msg3_slot_idx = 12;
+      ul_sample_offset   = 324;
+      half               = 0;
+      break;
+    case 6:
+      sample_file        = "shadower/test/data/srsran-n5-10MHz/rach_msg3.fc32";
+      last_sample_file   = "shadower/test/data/srsran-n5-10MHz/rach_msg3-last.fc32";
+      rach_msg2_slot_idx = 6;
+      rach_msg3_slot_idx = 12;
+      ul_sample_offset   = 318;
+      half               = 0;
+      break;
+    case 7:
+      sample_file        = "shadower/test/data/oai-n78-40mhz-3427.5/rach-msg3.fc32";
+      last_sample_file   = "shadower/test/data/oai-n78-40mhz-3427.5/rach-msg3.fc32";
+      rach_msg2_slot_idx = 12;
+      rach_msg3_slot_idx = 16;
+      ul_sample_offset   = 600;
+      half               = 1;
+      break;
+    case 8:
+      sample_file        = "shadower/test/data/cyberx-n78-40MHz/rach_msg3.fc32";
+      last_sample_file   = "shadower/test/data/cyberx-n78-40MHz/rach_msg3.fc32";
+      rach_msg2_slot_idx = 5;
+      rach_msg3_slot_idx = 14;
+      ul_sample_offset   = 612;
+      half               = 0;
+      break;
+    case 9:
+      sample_file        = "shadower/test/data/amarisoft-n78-20MHz/rach_msg3.fc32";
+      last_sample_file   = "shadower/test/data/amarisoft-n78-20MHz/rach_msg3_last.fc32";
+      rach_msg2_slot_idx = 13;
+      rach_msg3_slot_idx = 18;
+      half               = 0;
+      ul_sample_offset   = 300;
+      break;
     default:
       fprintf(stderr, "Unknown test number: %d\n", test_number);
       exit(EXIT_FAILURE);

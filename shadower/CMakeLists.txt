@@ -17,13 +17,14 @@
 # the LICENSE file in the top-level directory of this distribution
 # and at http://www.gnu.org/licenses/.
 #
-set(CMAKE_C_COMPILER "clang-15")
-set(CMAKE_CXX_COMPILER "clang++-15")
+# Override parent -std=c++14 in this subdirectory and use C++20 here.
+string(REPLACE "-std=c++14" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # Global compiler options
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-add_link_options("-fuse-ld=lld-15")
 # RPATH
 set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 set(CMAKE_BUILD_RPATH $ORIGIN bin)
@@ -69,31 +70,38 @@ include_directories(${CMAKE_SOURCE_DIR}/hdr)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLIB REQUIRED glib-2.0)
-if(GLIB_FOUND)
-  message("Found GLIB-2.0 library")
-  message("LD Flags: ${GLIB_LDFLAGS}")
-  message("C Flags: ${GLIB_CFLAGS}")
-endif()
 
-set(WDISSECTOR_PATH /root/wdissector)
-set(WDISSECTOR_INCLUDES
-  ${GLIB_INCLUDE_DIRS}
-  ${WDISSECTOR_PATH}/src/
-  ${WDISSECTOR_PATH}/libs/wireshark
-  ${WDISSECTOR_PATH}/libs/wireshark/include)
-message("WDISSECTOR_PATH=${WDISSECTOR_PATH}")
+# Add the wireshark library
+set(WIRESHARK_EXTERNAL_PATH /opt/wireshark)
+set(WIRESHARK_BUILD_PATH ${WIRESHARK_EXTERNAL_PATH}/build)
+set(WIRESHARK_RUN_PATH ${WIRESHARK_BUILD_PATH}/run)
 
-# Ensure correct symlink to wdissector bin folder
-if(NOT IS_SYMLINK ${PROJECT_SOURCE_DIR}/bin)
-  message(INFO "Removing invalid bin folder")
-  execute_process(COMMAND rm -rdf ${PROJECT_SOURCE_DIR}/bin)
+if(EXISTS "${WIRESHARK_RUN_PATH}/libwireshark.so" AND
+    EXISTS "${WIRESHARK_RUN_PATH}/libwiretap.so" AND
+    EXISTS "${WIRESHARK_RUN_PATH}/libwsutil.so")
+  add_library(wireshark_epan SHARED IMPORTED)
+  set_property(TARGET wireshark_epan PROPERTY IMPORTED_LOCATION "${WIRESHARK_RUN_PATH}/libwireshark.so")
+
+  add_library(wireshark_wiretap SHARED IMPORTED)
+  set_property(TARGET wireshark_wiretap PROPERTY IMPORTED_LOCATION "${WIRESHARK_RUN_PATH}/libwiretap.so")
+
+  add_library(wireshark_wsutil SHARED IMPORTED)
+  set_property(TARGET wireshark_wsutil PROPERTY IMPORTED_LOCATION "${WIRESHARK_RUN_PATH}/libwsutil.so")
+
+  set(WIRESHARK_EPAN_INCLUDES
+    ${WIRESHARK_EXTERNAL_PATH}
+    ${WIRESHARK_EXTERNAL_PATH}/include
+    ${WIRESHARK_BUILD_PATH}
+  )
+
+  set(WIRESHARK_EPAN_ENABLED ON)
+  # Ensure EPAN-enabled binaries resolve against the matching in-tree
+  # Wireshark libs before the legacy bin/ symlinked copies.
+  set(CMAKE_BUILD_RPATH "${WIRESHARK_RUN_PATH};$ORIGIN;bin")
+  message("Wireshark EPAN backend enabled")
+else()
+  message(WARNING "Wireshark EPAN backend requested but build artifacts were not found under ${WIRESHARK_RUN_PATH}")
 endif()
-execute_process(COMMAND ln -sfT ${WDISSECTOR_PATH}/bin ${PROJECT_SOURCE_DIR}/bin)
-add_library(wdissector SHARED IMPORTED)
-set_property(
-  TARGET wdissector PROPERTY IMPORTED_LOCATION
-  "${PROJECT_SOURCE_DIR}/bin/libwdissector.so")
-target_include_directories(wdissector INTERFACE ${WDISSECTOR_INCLUDES})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-DDBG)
@@ -109,7 +117,7 @@ add_subdirectory(test)
 add_subdirectory(modules)
 
 add_executable(shadower main.cc comp/scheduler.cc comp/ue_tracker.cc modules/exploit_loader.cc)
-target_link_libraries(shadower source syncer exploit_loader thread_pool broadcast_worker ue_dl_worker ue_ul_worker gnb_ul_worker gnb_dl_worker ${Boost_LIBRARIES})
+target_link_libraries(shadower source syncer exploit_loader thread_pool broadcast_worker ue_dl_worker ue_ul_worker gnb_ul_worker gnb_dl_worker apis ${Boost_LIBRARIES})
 if(ENABLE_CUDA)
   target_link_libraries(shadower fft_processor ssb_cuda)
 endif(ENABLE_CUDA)

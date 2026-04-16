@@ -76,14 +76,16 @@ void Syncer::run_tti()
   int32_t tti_jump = static_cast<int32_t>(srsran_timestamp_uint64(&temp, 1e3)) * slot_per_sf;
   if (tti_jump != 0) {
     srsran_timestamp_copy(&timestamp_prev, &timestamp_new);
-    tti = (tti + tti_jump) % (10240 * slot_per_sf);
+    tti          = (tti + tti_jump) % (10240 * slot_per_sf);
+    cur_task_idx = task_idx++;
   }
 }
 
-void Syncer::get_tti(uint32_t* idx, srsran_timestamp_t* ts)
+void Syncer::get_tti(uint32_t* idx, uint32_t* task_idx_, srsran_timestamp_t* ts)
 {
   std::lock_guard<std::mutex> lock(time_mtx);
-  *idx = tti;
+  *idx       = tti;
+  *task_idx_ = cur_task_idx;
   srsran_timestamp_copy(ts, &timestamp_new);
 }
 
@@ -92,8 +94,14 @@ Received:  |----s---------|--   Delay  2 symbols Copy --s--------- then receive 
 Received:    --|s-------------| Delay -2 symbols Copy --| and then receive ------------| process the new slot*/
 bool Syncer::listen(std::shared_ptr<samples_t>& samples)
 {
+  /*
+      |-SSBs--------|-SSBs--------|-SSBs--------|-SSBs-------- Correct Slot boundary, | is the first OFDM symbol
+      |-SSBs------|---SSBs------|  Offset > 0, the current slot is incomplete
+      |-SSBs---------|SSBs---------|  Offset < 0, the current slot has extra samples, next received slot need to copy
+     part of last slot
+  */
   cf_t* buffer[SRSRAN_MAX_CHANNELS];
-  for (int i = 0; i < SRSRAN_MAX_CHANNELS; i++) {
+  for (uint32_t i = 0; i < SRSRAN_MAX_CHANNELS; i++) {
     if (i < num_channels) {
       buffer[i] = samples->dl_buffer[i]->data();
     } else {
@@ -104,21 +112,21 @@ bool Syncer::listen(std::shared_ptr<samples_t>& samples)
   /* receive data */
   uint32_t offset     = 0;
   uint32_t to_receive = sf_len;
-  int32_t  limit      = 2.4e-6 * srate;
+  int32_t  limit      = ssb.cp_sz / 2;
   if (samples_delayed > limit) {
     /* If there's still a lot of samples belong to last subframe not processed,
       we receive the remaining samples and make it complete */
-    /* if current frame to receive still contain last frame, and the offset is larger than 500
+    /* if current frame to receive still contain last frame, and the offset is larger than half CP length
     Then copy the last sf from the correct start to current buffer, we re-do some decoding on the
     same sf we already processed before */
     std::shared_ptr<samples_t> history = history_samples_queue.back();
     /* Remaining correctly aligned samples in the last slot */
-    uint32_t remaining = sf_len - samples_delayed;
+    uint32_t samples_in_current_slot = sf_len - samples_delayed;
     /* read from history queue and fill current subframe with last subframe data */
     for (uint32_t i = 0; i < num_channels; i++) {
-      srsran_vec_cf_copy(buffer[i], history->dl_buffer[i]->data() + samples_delayed, remaining);
+      srsran_vec_cf_copy(buffer[i], history->dl_buffer[i]->data() + samples_delayed, samples_in_current_slot);
     }
-    offset     = remaining;
+    offset     = samples_in_current_slot;
     to_receive = samples_delayed;
   } else if (samples_delayed > 0) {
     /* If the offset is too small, just ignore */
@@ -128,7 +136,7 @@ bool Syncer::listen(std::shared_ptr<samples_t>& samples)
     /* if part of new frame is already occupied in last frame */
     offset     = (uint32_t)(-samples_delayed);
     to_receive = (sf_len + samples_delayed);
-    if (offset > limit) {
+    if (limit > 0 && offset > static_cast<uint32_t>(limit)) {
       std::shared_ptr<samples_t> history = history_samples_queue.back();
       for (uint32_t i = 0; i < num_channels; i++) {
         srsran_vec_cf_copy(buffer[i], history->dl_buffer[i]->data() + to_receive, offset);
@@ -143,7 +151,7 @@ bool Syncer::listen(std::shared_ptr<samples_t>& samples)
   samples_delayed = 0;
   srsran_timestamp_t ts;
   cf_t*              tmp[SRSRAN_MAX_CHANNELS];
-  for (int i = 0; i < num_channels; i++) {
+  for (uint32_t i = 0; i < num_channels; i++) {
     tmp[i] = buffer[i] + offset;
   }
   /* receive the remaining samples of the subframe */
@@ -178,7 +186,7 @@ bool Syncer::run_cell_search()
   while (!cell_found.load()) {
     /* Initialize the buffer */
     std::shared_ptr<samples_t> samples = std::make_shared<samples_t>();
-    for (int i = 0; i < config.nof_channels; i++) {
+    for (uint32_t i = 0; i < config.nof_channels; i++) {
       samples->dl_buffer[i] = buffer_pool->get_buffer();
     }
     /* receive the samples */
@@ -210,7 +218,8 @@ bool Syncer::run_cell_search()
     std::array<char, 512> mib_info_str = {};
     srsran_pbch_msg_nr_mib_info(&mib, mib_info_str.data(), (uint32_t)mib_info_str.size());
     logger.info(YELLOW "Found cell: %s" RESET, mib_info_str.data());
-    logger.debug("Cell Search CFO: %f", cs_result.measurements.cfo_hz);
+    logger.info(YELLOW "Cell ID: %u" RESET, cs_result.N_id);
+    logger.info("Cell Search CFO: %f", cs_result.measurements.cfo_hz);
     ncellid = cs_result.N_id;
 
     tracer_sib1.send(samples->dl_buffer[0]->data(), sf_len, true);
@@ -342,7 +351,7 @@ void Syncer::run_thread()
   while (running.load()) {
     std::shared_ptr<samples_t> last_samples = history_samples_queue.back();
     std::shared_ptr<samples_t> samples      = std::make_shared<samples_t>();
-    for (int i = 0; i < config.nof_channels; i++) {
+    for (uint32_t i = 0; i < config.nof_channels; i++) {
       samples->dl_buffer[i] = buffer_pool->get_buffer();
     }
     if (!listen(samples)) {
@@ -390,13 +399,13 @@ void Syncer::run_thread()
     }
 
     task->slot_idx = tti;
-    task->task_idx = task_idx++;
+    task->task_idx = cur_task_idx;
     task->ts       = timestamp_new;
     publish_subframe(task);
     if (config.enable_recorder) {
       char filename[64];
-      for (int ch = 0; ch < config.nof_channels; ch++) {
-        sprintf(filename, "sf_%u_%u_ch_%d", task->task_idx, task->slot_idx, ch);
+      for (uint32_t ch = 0; ch < config.nof_channels; ch++) {
+        sprintf(filename, "sf_%u_%u_ch_%u", task->task_idx, task->slot_idx, ch);
         write_record_to_file(samples->dl_buffer[ch]->data(), sf_len, filename);
       }
     }

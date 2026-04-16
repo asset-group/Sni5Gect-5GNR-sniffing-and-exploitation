@@ -46,6 +46,9 @@ typedef struct SRSRAN_API {
   srsran_search_space_t search_space[SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE];
   bool                  search_space_present[SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE];
 
+  srsran_search_space_t dedicated_search_space[SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE];
+  bool                  dedicated_search_space_present[SRSRAN_UE_DL_NR_MAX_NOF_SEARCH_SPACE];
+
   srsran_search_space_t ra_search_space;
   bool                  ra_search_space_present;
 } srsran_pdcch_cfg_nr_t;

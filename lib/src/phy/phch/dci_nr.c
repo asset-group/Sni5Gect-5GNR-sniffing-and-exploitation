@@ -152,7 +152,7 @@ static uint32_t dci_nr_ul_ports_size(const srsran_dci_cfg_nr_t* cfg)
 
 static uint32_t dci_nr_srs_id_size(const srsran_dci_cfg_nr_t* cfg)
 {
-  uint32_t N_srs = SRSRAN_MIN(1, cfg->nof_srs);
+  // uint32_t N_srs = SRSRAN_MIN(1, cfg->nof_srs);
   if (cfg->pusch_tx_config_non_codebook) {
     uint32_t N = 0;
     for (uint32_t k = 1; k < SRSRAN_MIN(cfg->nof_ul_layers, cfg->nof_srs); k++) {
@@ -160,7 +160,8 @@ static uint32_t dci_nr_srs_id_size(const srsran_dci_cfg_nr_t* cfg)
     }
     return (uint32_t)SRSRAN_CEIL_LOG2(N);
   }
-  return (uint32_t)SRSRAN_CEIL_LOG2(N_srs);
+  // return (uint32_t)SRSRAN_CEIL_LOG2(N_srs);
+  return (uint32_t)SRSRAN_CEIL_LOG2(cfg->nof_srs);
 }
 
 // Determines DCI format 0_0 according to TS 38.212 clause 7.3.1.1.1
@@ -410,7 +411,7 @@ static uint32_t dci_nr_format_0_1_sizeof(const srsran_dci_cfg_nr_t* cfg, srsran_
   count += dci_nr_bwp_id_size(cfg->nof_ul_bwp);
 
   // Frequency domain resource assignment
-  count += dci_nr_freq_resource_size(cfg->pusch_alloc_type, cfg->nof_rb_groups, cfg->bwp_ul_active_bw);
+  count += dci_nr_freq_resource_size(cfg->pusch_alloc_type, cfg->nof_ul_rb_groups, cfg->bwp_ul_active_bw);
 
   // Time domain resource assignment - 0, 1, 2, 3, or 4 bits
   count += dci_nr_time_res_size(cfg->nof_ul_time_res);
@@ -435,7 +436,7 @@ static uint32_t dci_nr_format_0_1_sizeof(const srsran_dci_cfg_nr_t* cfg, srsran_
   count += 4;
 
   // 1st DAI - 1 or 2 bits
-  if (cfg->harq_ack_codebok == srsran_pdsch_harq_ack_codebook_semi_static) {
+  if (cfg->harq_ack_codebook == srsran_pdsch_harq_ack_codebook_semi_static) {
     count += 1;
   } else {
     count += 2;
@@ -453,9 +454,39 @@ static uint32_t dci_nr_format_0_1_sizeof(const srsran_dci_cfg_nr_t* cfg, srsran_
   count += dci_nr_srs_id_size(cfg);
 
   // Precoding information and number of layers
-  if (!cfg->pusch_tx_config_non_codebook && cfg->nof_ul_layers > 1) {
-    ERROR("Not implemented");
-    return 0;
+  if (!cfg->pusch_tx_config_non_codebook && cfg->nof_srs_ports > 1) {
+    // Codebook with multiple SRS ports: precoding bits depend on maxRank, dmrs config, and nof_srs_ports
+    // Tables 7.3.1.1.2-2 (transform disabled, dmrs-Type=1, maxLength=1):
+    //   nof_srs_ports=2, maxRank=1: 2 bits; maxRank=2: 4 bits
+    //   nof_srs_ports=4, maxRank=1: 4 bits; maxRank=2: 7 bits; maxRank=3/4: varies
+    if (cfg->pusch_dmrs_type == srsran_dmrs_sch_type_1 && cfg->pusch_dmrs_max_len == srsran_dmrs_sch_len_1) {
+      if (cfg->nof_ul_layers <= 1) {
+        // maxRank=1
+        if (cfg->nof_srs_ports == 2)
+          count += 2;
+        else if (cfg->nof_srs_ports == 4)
+          count += 4;
+      } else {
+        // maxRank>=2
+        if (cfg->nof_srs_ports == 2)
+          count += 4;
+        else if (cfg->nof_srs_ports == 4)
+          count += 7;
+      }
+    } else {
+      // Other DMRS type/length combinations — approximate using same approach
+      if (cfg->nof_ul_layers <= 1) {
+        if (cfg->nof_srs_ports == 2)
+          count += 2;
+        else if (cfg->nof_srs_ports == 4)
+          count += 4;
+      } else {
+        if (cfg->nof_srs_ports == 2)
+          count += 4;
+        else if (cfg->nof_srs_ports == 4)
+          count += 7;
+      }
+    }
   }
 
   // Antenna ports
@@ -516,7 +547,7 @@ static int dci_nr_format_0_1_pack(const srsran_dci_nr_t* q, const srsran_dci_ul_
   // Frequency domain resource assignment
   srsran_bit_unpack(dci->freq_domain_assignment,
                     &y,
-                    dci_nr_freq_resource_size(cfg->pusch_alloc_type, cfg->nof_rb_groups, cfg->bwp_ul_active_bw));
+                    dci_nr_freq_resource_size(cfg->pusch_alloc_type, cfg->nof_ul_rb_groups, cfg->bwp_ul_active_bw));
 
   // Time domain resource assignment - 0, 1, 2, 3, or 4 bits
   srsran_bit_unpack(dci->time_domain_assignment, &y, dci_nr_time_res_size(cfg->nof_ul_time_res));
@@ -539,7 +570,7 @@ static int dci_nr_format_0_1_pack(const srsran_dci_nr_t* q, const srsran_dci_ul_
   srsran_bit_unpack(dci->pid, &y, 4);
 
   // 1st DAI - 1 or 2 bits
-  if (cfg->harq_ack_codebok == srsran_pdsch_harq_ack_codebook_semi_static) {
+  if (cfg->harq_ack_codebook == srsran_pdsch_harq_ack_codebook_semi_static) {
     srsran_bit_unpack(dci->dai1, &y, 1);
   } else {
     srsran_bit_unpack(dci->dai1, &y, 2);
@@ -627,8 +658,8 @@ static int dci_nr_format_0_1_unpack(const srsran_dci_nr_t* q, srsran_dci_msg_nr_
   dci->bwp_id = srsran_bit_pack(&y, dci_nr_bwp_id_size(cfg->nof_ul_bwp));
 
   // Frequency domain resource assignment
-  dci->freq_domain_assignment =
-      srsran_bit_pack(&y, dci_nr_freq_resource_size(cfg->pusch_alloc_type, cfg->nof_rb_groups, cfg->bwp_ul_active_bw));
+  dci->freq_domain_assignment = srsran_bit_pack(
+      &y, dci_nr_freq_resource_size(cfg->pusch_alloc_type, cfg->nof_ul_rb_groups, cfg->bwp_ul_active_bw));
 
   // Time domain resource assignment - 0, 1, 2, 3, or 4 bits
   dci->time_domain_assignment = srsran_bit_pack(&y, dci_nr_time_res_size(cfg->nof_ul_time_res));
@@ -651,7 +682,7 @@ static int dci_nr_format_0_1_unpack(const srsran_dci_nr_t* q, srsran_dci_msg_nr_
   dci->pid = srsran_bit_pack(&y, 4);
 
   // 1st DAI - 1 or 2 bits
-  if (cfg->harq_ack_codebok == srsran_pdsch_harq_ack_codebook_semi_static) {
+  if (cfg->harq_ack_codebook == srsran_pdsch_harq_ack_codebook_semi_static) {
     dci->dai1 = srsran_bit_pack(&y, 1);
   } else {
     dci->dai1 = srsran_bit_pack(&y, 2);
@@ -670,16 +701,17 @@ static int dci_nr_format_0_1_unpack(const srsran_dci_nr_t* q, srsran_dci_msg_nr_
 
   // Precoding information and number of layers
   if (cfg->pusch_tx_config_non_codebook) {
-    ERROR("Not implemented");
-    return 0;
+    ERROR("Not implemented pusch_tx_config_non_codebook");
+    // return 0;
   }
 
   // Antenna ports
   if (!cfg->enable_transform_precoding && cfg->pusch_dmrs_max_len == srsran_dmrs_sch_len_1) {
     dci->ports = srsran_bit_pack(&y, 3);
   } else {
-    ERROR("Not implemented");
-    return 0;
+    dci->ports = srsran_bit_pack(&y, dci_nr_ul_ports_size(cfg));
+    // ERROR("Not implemented");
+    // return 0;
   }
 
   // SRS request - 2 or 3 bits
@@ -1021,12 +1053,12 @@ static uint32_t dci_nr_format_1_0_sizeof(uint32_t N_DL_BWP_RB, srsran_rnti_type_
 
 static int dci_nr_format_1_0_pack(const srsran_dci_nr_t* q, const srsran_dci_dl_nr_t* dci, srsran_dci_msg_nr_t* msg)
 {
-  uint8_t*                   y           = msg->payload;
-  srsran_rnti_type_t         rnti_type   = msg->ctx.rnti_type;
-  srsran_search_space_type_t ss_type     = dci->ctx.ss_type;
-  uint32_t                   N_DL_BWP_RB = SRSRAN_SEARCH_SPACE_IS_COMMON(ss_type)
-                                               ? (q->cfg.coreset0_bw == 0) ? q->cfg.bwp_dl_initial_bw : q->cfg.coreset0_bw
-                                               : q->cfg.bwp_dl_active_bw;
+  uint8_t*                   y         = msg->payload;
+  srsran_rnti_type_t         rnti_type = msg->ctx.rnti_type;
+  srsran_search_space_type_t ss_type   = dci->ctx.ss_type;
+  uint32_t N_DL_BWP_RB                 = SRSRAN_SEARCH_SPACE_IS_COMMON(ss_type)
+                                             ? (q->cfg.coreset0_bw == 0) ? q->cfg.bwp_dl_initial_bw : q->cfg.coreset0_bw
+                                             : q->cfg.bwp_dl_active_bw;
 
   // Identifier for DCI formats – 1 bits
   if (rnti_type == srsran_rnti_type_c || rnti_type == srsran_rnti_type_tc) {
@@ -1127,12 +1159,12 @@ static int dci_nr_format_1_0_pack(const srsran_dci_nr_t* q, const srsran_dci_dl_
 
 static int dci_nr_format_1_0_unpack(const srsran_dci_nr_t* q, srsran_dci_msg_nr_t* msg, srsran_dci_dl_nr_t* dci)
 {
-  uint8_t*                   y           = msg->payload;
-  srsran_rnti_type_t         rnti_type   = msg->ctx.rnti_type;
-  srsran_search_space_type_t ss_type     = msg->ctx.ss_type;
-  uint32_t                   N_DL_BWP_RB = SRSRAN_SEARCH_SPACE_IS_COMMON(ss_type)
-                                               ? (q->cfg.coreset0_bw == 0) ? q->cfg.bwp_dl_initial_bw : q->cfg.coreset0_bw
-                                               : q->cfg.bwp_dl_active_bw;
+  uint8_t*                   y         = msg->payload;
+  srsran_rnti_type_t         rnti_type = msg->ctx.rnti_type;
+  srsran_search_space_type_t ss_type   = msg->ctx.ss_type;
+  uint32_t N_DL_BWP_RB                 = SRSRAN_SEARCH_SPACE_IS_COMMON(ss_type)
+                                             ? (q->cfg.coreset0_bw == 0) ? q->cfg.bwp_dl_initial_bw : q->cfg.coreset0_bw
+                                             : q->cfg.bwp_dl_active_bw;
 
   uint32_t nof_bits = srsran_dci_nr_size(q, ss_type, srsran_dci_format_nr_1_0);
   if (msg->nof_bits != nof_bits) {
@@ -1332,7 +1364,7 @@ static uint32_t dci_nr_format_1_1_sizeof(const srsran_dci_cfg_nr_t* cfg, srsran_
   count += (int)dci_nr_bwp_id_size(cfg->nof_dl_bwp);
 
   // Frequency domain resource assignment
-  count += dci_nr_freq_resource_size(cfg->pdsch_alloc_type, cfg->nof_rb_groups, cfg->bwp_dl_active_bw);
+  count += dci_nr_freq_resource_size(cfg->pdsch_alloc_type, cfg->nof_dl_rb_groups, cfg->bwp_dl_active_bw);
 
   // Time domain resource assignment – 0, 1, 2, 3, or 4 bits
   count += dci_nr_time_res_size(cfg->nof_dl_time_res);
@@ -1343,7 +1375,9 @@ static uint32_t dci_nr_format_1_1_sizeof(const srsran_dci_cfg_nr_t* cfg, srsran_
   }
 
   // PRB bundling size indicator – 0 or 1 bits
-  // ... not implemented
+  if (cfg->prb_dynamic_bundling) {
+    ERROR("not implemented for PRB-bundlingtype dynamic");
+  } // Else 0
 
   // Rate matching indicator – 0, 1, or 2 bits
   if (cfg->pdsch_rm_pattern1) {
@@ -1382,7 +1416,7 @@ static uint32_t dci_nr_format_1_1_sizeof(const srsran_dci_cfg_nr_t* cfg, srsran_
   count += 4;
 
   // Downlink assignment index (dynamic HARQ-ACK codebook only)
-  if (cfg->harq_ack_codebok == srsran_pdsch_harq_ack_codebook_dynamic) {
+  if (cfg->harq_ack_codebook == srsran_pdsch_harq_ack_codebook_dynamic) {
     if (cfg->multiple_scell) {
       count += 4;
     } else {
@@ -1447,7 +1481,7 @@ static int dci_nr_format_1_1_pack(const srsran_dci_nr_t* q, const srsran_dci_dl_
   // Frequency domain resource assignment
   srsran_bit_unpack(dci->freq_domain_assignment,
                     &y,
-                    dci_nr_freq_resource_size(cfg->pdsch_alloc_type, cfg->nof_rb_groups, cfg->bwp_dl_active_bw));
+                    dci_nr_freq_resource_size(cfg->pdsch_alloc_type, cfg->nof_dl_rb_groups, cfg->bwp_dl_active_bw));
 
   // Time domain resource assignment – 0, 1, 2, 3, or 4 bits
   srsran_bit_unpack(dci->time_domain_assignment, &y, dci_nr_time_res_size(cfg->nof_dl_time_res));
@@ -1498,7 +1532,7 @@ static int dci_nr_format_1_1_pack(const srsran_dci_nr_t* q, const srsran_dci_dl_
   srsran_bit_unpack(dci->pid, &y, 4);
 
   // Downlink assignment index (dynamic HARQ-ACK codebook only)
-  if (cfg->harq_ack_codebok == srsran_pdsch_harq_ack_codebook_dynamic) {
+  if (cfg->harq_ack_codebook == srsran_pdsch_harq_ack_codebook_dynamic) {
     if (cfg->multiple_scell) {
       srsran_bit_unpack(dci->dai, &y, 4);
     } else {
@@ -1537,7 +1571,7 @@ static int dci_nr_format_1_1_pack(const srsran_dci_nr_t* q, const srsran_dci_dl_
   // DMRS sequence initialization – 1 bit
   srsran_bit_unpack(dci->dmrs_id, &y, 1);
 
-  for (uint32_t pad = 0;pad < q->dci_1_1_padd;pad++) {
+  for (uint32_t pad = 0; pad < q->dci_1_1_padd; pad++) {
     *(y++) = 0;
   }
 
@@ -1580,8 +1614,8 @@ static int dci_nr_format_1_1_unpack(const srsran_dci_nr_t* q, srsran_dci_msg_nr_
   dci->bwp_id = srsran_bit_pack(&y, dci_nr_bwp_id_size(cfg->nof_dl_bwp));
 
   // Frequency domain resource assignment
-  dci->freq_domain_assignment =
-      srsran_bit_pack(&y, dci_nr_freq_resource_size(cfg->pdsch_alloc_type, cfg->nof_rb_groups, cfg->bwp_dl_active_bw));
+  dci->freq_domain_assignment = srsran_bit_pack(
+      &y, dci_nr_freq_resource_size(cfg->pdsch_alloc_type, cfg->nof_dl_rb_groups, cfg->bwp_dl_active_bw));
 
   // Time domain resource assignment – 0, 1, 2, 3, or 4 bits
   dci->time_domain_assignment = srsran_bit_pack(&y, dci_nr_time_res_size(cfg->nof_dl_time_res));
@@ -1632,7 +1666,7 @@ static int dci_nr_format_1_1_unpack(const srsran_dci_nr_t* q, srsran_dci_msg_nr_
   dci->pid = srsran_bit_pack(&y, 4);
 
   // Downlink assignment index (dynamic HARQ-ACK codebook only)
-  if (cfg->harq_ack_codebok == srsran_pdsch_harq_ack_codebook_dynamic) {
+  if (cfg->harq_ack_codebook == srsran_pdsch_harq_ack_codebook_dynamic) {
     if (cfg->multiple_scell) {
       dci->dai = srsran_bit_pack(&y, 4);
     } else {
@@ -1752,7 +1786,7 @@ dci_nr_format_1_1_to_str(const srsran_dci_nr_t* q, const srsran_dci_dl_nr_t* dci
   len = srsran_print_check(str, str_len, len, "harq_id=%d ", dci->pid);
 
   // Downlink assignment index (dynamic HARQ-ACK codebook only)
-  if (cfg->harq_ack_codebok == srsran_pdsch_harq_ack_codebook_dynamic) {
+  if (cfg->harq_ack_codebook == srsran_pdsch_harq_ack_codebook_dynamic) {
     len = srsran_print_check(str, str_len, len, "dai=%d ", dci->dai);
   }
 

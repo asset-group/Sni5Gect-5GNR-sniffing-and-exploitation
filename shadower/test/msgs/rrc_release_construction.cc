@@ -2,7 +2,6 @@
 #include "shadower/modules/dummy_exploit.h"
 #include "shadower/utils/msg_helper.h"
 #include "shadower/utils/utils.h"
-#include "srsran/asn1/rrc_nr.h"
 #include "srsran/mac/mac_sch_pdu_nr.h"
 #include <chrono>
 #include <iomanip>
@@ -26,19 +25,19 @@ int main()
   }
 
   /* DL DCCH Message */
-  asn1::rrc_nr::dl_dcch_msg_s  dl_dcch_msg;
-  asn1::rrc_nr::rrc_release_s& release = dl_dcch_msg.msg.set_c1().set_rrc_release();
-  release.rrc_transaction_id           = 0;
+  asn1::rrc_nr_r17::dl_dcch_msg_s  dl_dcch_msg;
+  asn1::rrc_nr_r17::rrc_release_s& release = dl_dcch_msg.msg.set_c1().set_rrc_release();
+  release.rrc_transaction_id               = 0;
 
   /* RRC Release IEs */
-  asn1::rrc_nr::rrc_release_ies_s& ies = release.crit_exts.set_rrc_release();
+  asn1::rrc_nr_r17::rrc_release_ies_s& ies = release.crit_exts.set_rrc_release();
 
   /* Set redirect to another carrier information */
-  ies.redirected_carrier_info_present                  = true;
-  asn1::rrc_nr::carrier_info_nr_s& nr_redirection_info = ies.redirected_carrier_info.set_nr();
+  ies.redirected_carrier_info_present                      = true;
+  asn1::rrc_nr_r17::carrier_info_nr_s& nr_redirection_info = ies.redirected_carrier_info.set_nr();
 
-  asn1::rrc_nr::redirected_carrier_info_eutra_s& redirection_info = ies.redirected_carrier_info.set_eutra();
-  // redirection_info.cn_type         = asn1::rrc_nr::redirected_carrier_info_eutra_s::cn_type_opts::epc;
+  asn1::rrc_nr_r17::redirected_carrier_info_eutra_s& redirection_info = ies.redirected_carrier_info.set_eutra();
+  // redirection_info.cn_type         = asn1::rrc_nr_r17::redirected_carrier_info_eutra_s::cn_type_opts::epc;
   // redirection_info.cn_type_present = true;
   redirection_info.eutra_freq = 2680;
 

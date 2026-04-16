@@ -40,5 +40,6 @@ int main(int argc, char* argv[])
     printf("Failed to open pcap file\n");
   }
   writer->write_dl_crnti_nr(data, size, 0x10b, 4, 10);
+  // writer->write_dl_ra_rnti_nr(data, size, 0x10b, 4, 10);
   writer->close();
 }

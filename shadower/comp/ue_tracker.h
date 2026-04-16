@@ -1,5 +1,6 @@
 #ifndef SRSRAN_UE_TRACKER_H
 #define SRSRAN_UE_TRACKER_H
+#include "shadower/comp/apis/apis.h"
 #include "shadower/comp/sync/syncer.h"
 #include "shadower/comp/workers/gnb_dl_worker.h"
 #include "shadower/comp/workers/gnb_ul_worker.h"
@@ -12,7 +13,6 @@
 #include "shadower/utils/safe_queue.h"
 #include "shadower/utils/task.h"
 #include "srsran/adt/circular_map.h"
-#include "srsran/asn1/rrc_nr.h"
 #include "srsran/common/mac_pcap.h"
 #include "srsran/common/thread_pool.h"
 #include "srsran/common/threads.h"
@@ -47,13 +47,13 @@ public:
   void set_ue_rar_grant(std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS>& grant, uint32_t slot_idx);
 
   /* Apply the configuration from SIB1 */
-  bool apply_config_from_sib1(asn1::rrc_nr::sib1_s& sib1);
+  bool apply_config_from_sib1(asn1::rrc_nr_r17::sib1_s& sib1);
 
   /* Apply the configuration from MIB */
   bool apply_config_from_mib(srsran_mib_nr_t& mib, uint32_t ncellid);
 
   /* Apply the configuration from cell group */
-  bool apply_config_from_rrc_setup(asn1::rrc_nr::cell_group_cfg_s& cell_group);
+  bool apply_config_from_rrc_setup(asn1::rrc_nr_r17::cell_group_cfg_s& cell_group);
 
   /* Distribute the phy_cfg config */
   bool update_cfg();
@@ -72,8 +72,19 @@ public:
   /* Update timing advance */
   void update_timing_advance(int32_t ta_command);
 
+  /* Apply the TA offset directly */
+  void update_uplink_offset(int offset);
+
   /* Update DCI UL */
   int on_dci_ul_found(srsran_dci_ul_nr_t& dci_ul, srsran_slot_cfg_t& slot_cfg);
+
+  void set_ul_api(std::shared_ptr<APIs> ul_api_)
+  {
+    ul_api = ul_api_;
+    for (auto& w : gnb_ul_workers) {
+      w->set_ul_api(ul_api_);
+    }
+  }
 
 private:
   srslog::basic_logger& logger = srslog::fetch_basic_logger("UETracker");
@@ -88,7 +99,7 @@ private:
   Syncer* syncer = nullptr;
   /* Source of the IQ samples */
   Source* source = nullptr;
-  /* Wdissector worker */
+  /* Wireshark dissector worker */
   WDWorker* wd_worker = nullptr;
   /* UE specific exploit instance */
   Exploit*          exploit = nullptr;
@@ -112,16 +123,18 @@ private:
   srsran::static_circular_map<uint32_t, srsran_pucch_nr_resource_t, 128> pucch_res_list = {};
   std::map<uint32_t, srsran_csi_rs_zp_resource_t>                        csi_rs_zp_res  = {};
   std::map<uint32_t, srsran_csi_rs_nzp_resource_t>                       csi_rs_nzp_res = {};
+  std::map<uint32_t, std::vector<std::vector<uint8_t> > >                msg_segments   = {};
 
-  srsran::phy_cfg_nr_t phy_cfg      = {}; // physical configuration
-  srsue::nr::state     phy_state    = {}; // UE side grant tracker
-  srsue::nr::state     ul_phy_state = {}; // UE UL grant tracker
-  int32_t              n_timing_advance;  // Timing advance steps
-  double               ta_time;           // Timing advance time
+  srsran::phy_cfg_nr_t phy_cfg      = {};       // physical configuration
+  srsue::nr::state     phy_state    = {};       // UE side grant tracker
+  srsue::nr::state     ul_phy_state = {};       // UE UL grant tracker
+  int32_t              n_timing_advance;        // Timing advance steps
+  int32_t              n_timing_advance_offset; // Timing advance steps
+  double               ta_time;                 // Timing advance time
 
   /* cell group config */
-  asn1::rrc_nr::cell_group_cfg_s  cell_group_cfg = {};
-  asn1::rrc_nr::cell_group_cfg_s& get_cell_group_cfg() { return cell_group_cfg; }
+  asn1::rrc_nr_r17::cell_group_cfg_s  cell_group_cfg = {};
+  asn1::rrc_nr_r17::cell_group_cfg_s& get_cell_group_cfg() { return cell_group_cfg; }
 
   /* UE DL */
   std::vector<UEDLWorker*> ue_dl_workers;
@@ -138,6 +151,8 @@ private:
   /* GNB UL */
   std::vector<GNBULWorker*> gnb_ul_workers;
   srsran::thread_pool       gnb_ul_pool; // thread pool for gnb_ul
+
+  std::shared_ptr<APIs> ul_api = nullptr;
 };
 
 #endif // SRSRAN_UE_TRACKER_H

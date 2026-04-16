@@ -396,11 +396,15 @@ typedef struct SRSRAN_API {
 } srsran_carrier_nr_t;
 
 #define SRSRAN_DEFAULT_CARRIER_NR                                                                                      \
-  {                                                                                                                    \
-    .pci = 500, .dl_center_frequency_hz = 117000 * 30e3, .ul_center_frequency_hz = 117000 * 30e3,                      \
-    .ssb_center_freq_hz = 3.5e9, .offset_to_carrier = 0, .scs = srsran_subcarrier_spacing_15kHz, .nof_prb = 52,        \
-    .start = 0, .max_mimo_layers = 1                                                                                   \
-  }
+  {.pci                    = 500,                                                                                      \
+   .dl_center_frequency_hz = 117000 * 30e3,                                                                            \
+   .ul_center_frequency_hz = 117000 * 30e3,                                                                            \
+   .ssb_center_freq_hz     = 3.5e9,                                                                                    \
+   .offset_to_carrier      = 0,                                                                                        \
+   .scs                    = srsran_subcarrier_spacing_15kHz,                                                          \
+   .nof_prb                = 52,                                                                                       \
+   .start                  = 0,                                                                                        \
+   .max_mimo_layers        = 1}
 
 /**
  * @brief NR Slot parameters. It contains parameters that change in a slot basis.
@@ -464,13 +468,15 @@ typedef struct SRSRAN_API {
   srsran_dci_format_nr_t     formats[SRSRAN_DCI_FORMAT_NR_COUNT]; ///< Specifies the DCI formats that shall be searched
   uint32_t                   nof_formats;
   uint32_t                   nof_candidates[SRSRAN_SEARCH_SPACE_NOF_AGGREGATION_LEVELS_NR];
+  uint16_t                   monitoring_symbols_within_slot; ///< 14-bit bitmap; bit s = 1 means monitor OFDM symbol s
+  bool monitoring_symbols_within_slot_present;               ///< 14-bit bitmap; bit s = 1 means monitor OFDM symbol s
 } srsran_search_space_t;
 
 /**
  * @brief TDD pattern configuration
  */
 typedef struct SRSRAN_API {
-  uint32_t period_ms;      ///< Period in milliseconds, set to 0 if not present
+  float    period_ms;      ///< Period in milliseconds, set to 0 if not present
   uint32_t nof_dl_slots;   ///< Number of consecutive full DL slots at the beginning of each DL-UL pattern
   uint32_t nof_dl_symbols; ///< Number of consecutive DL symbols in the beginning of the slot following the last DL slot
   uint32_t nof_ul_slots;   ///< Number of consecutive full UL slots at the end of each DL-UL pattern
@@ -512,6 +518,7 @@ typedef struct SRSRAN_API {
   float    cfo_hz;     ///< Carrier frequency offset in Hz. Only set if more than 2 symbols are available in a TRS set
   float    cfo_hz_max; ///< Maximum CFO in Hz that can be measured. It is set to 0 if CFO cannot be estimated
   float    delay_us;   ///< Average measured delay in microseconds
+  uint32_t ssb_offset; ///< SSB index offset from the reference SSB
   uint32_t nof_re;     ///< Number of available RE for the measurement, it can be used for weighting among different
   ///< measurements
 } srsran_csi_trs_measurements_t;

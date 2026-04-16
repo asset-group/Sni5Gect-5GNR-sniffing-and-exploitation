@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
   /* Estimate PDCCH channel for every configured CORESET for each slot */
   for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_CORESET; i++) {
     if (ue_dl.cfg.coreset_present[i]) {
-      srsran_dmrs_pdcch_estimate(&ue_dl.dmrs_pdcch[i], &dci_slot_cfg, ue_dl.sf_symbols[0]);
+      srsran_dmrs_pdcch_estimate(&ue_dl.dmrs_pdcch[i], &dci_slot_cfg, ue_dl.sf_symbols[0], 0);
     }
   }
 
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
     return -1;
   }
   char dci_str[256];
-  for (int i = 0; i < ue_dl.num_ul_dci; i++) {
+  for (uint32_t i = 0; i < ue_dl.num_ul_dci; i++) {
     srsran_dci_ul_nr_to_str(&ue_dl.dci, &dci_ul[i], dci_str, 256);
     logger.info("UL DCI found: %s", dci_str);
   }
@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, pusch_cfg, target_slot_idx, rx_timestamp);
+  ue_ul_worker->send_pusch(tx_slot_cfg, pusch_payload, pusch_cfg, target_slot_idx, 0, rx_timestamp);
 
   /* Initialize gnb_ul to try to decode the generated messages */
   srsran_gnb_ul_t gnb_ul        = {};

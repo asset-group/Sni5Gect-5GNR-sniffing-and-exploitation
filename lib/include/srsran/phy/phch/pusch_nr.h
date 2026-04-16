@@ -24,6 +24,7 @@
 
 #include "srsran/config.h"
 #include "srsran/phy/ch_estimation/dmrs_sch.h"
+#include "srsran/phy/dft/dft_precoding.h"
 #include "srsran/phy/modem/evm.h"
 #include "srsran/phy/modem/modem_table.h"
 #include "srsran/phy/phch/phch_cfg_nr.h"
@@ -48,33 +49,34 @@ typedef struct SRSRAN_API {
  * @brief PDSCH NR object
  */
 typedef struct SRSRAN_API {
-  uint32_t             max_prb;                         ///< Maximum number of allocated prb
-  uint32_t             max_layers;                      ///< Maximum number of allocated layers
-  uint32_t             max_cw;                          ///< Maximum number of allocated code words
-  srsran_carrier_nr_t  carrier;                         ///< NR carrier configuration
-  srsran_sch_nr_t      sch;                             ///< SCH Encoder/Decoder Object
-  srsran_uci_nr_t      uci;                             ///< UCI Encoder/Decoder Object
-  uint8_t*             b[SRSRAN_MAX_CODEWORDS];         ///< SCH Encoded and scrambled data
-  cf_t*                d[SRSRAN_MAX_CODEWORDS];         ///< PDSCH modulated bits
-  cf_t*                x[SRSRAN_MAX_LAYERS_NR];         ///< PDSCH modulated bits
-  srsran_modem_table_t modem_tables[SRSRAN_MOD_NITEMS]; ///< Modulator tables
-  srsran_evm_buffer_t* evm_buffer;
-  bool                 meas_time_en;
-  uint32_t             meas_time_us;
-  srsran_re_pattern_t  dmrs_re_pattern;
-  uint8_t*             g_ulsch;   ///< Temporal Encoded UL-SCH data
-  uint8_t*             g_ack;     ///< Temporal Encoded HARQ-ACK bits
-  uint8_t*             g_csi1;    ///< Temporal Encoded CSI part 1 bits
-  uint8_t*             g_csi2;    ///< Temporal Encoded CSI part 2 bits
-  uint32_t*            pos_ulsch; ///< Reserved resource elements for HARQ-ACK multiplexing position
-  uint32_t*            pos_ack;   ///< Reserved resource elements for HARQ-ACK multiplexing position
-  uint32_t*            pos_csi1;  ///< Reserved resource elements for CSI part 1 multiplexing position
-  uint32_t*            pos_csi2;  ///< Reserved resource elements for CSI part 1 multiplexing position
-  bool                 uci_mux;   ///< Set to true if PUSCH needs to multiplex UCI
-  uint32_t             G_ack;     ///< Number of encoded HARQ-ACK bits
-  uint32_t             G_csi1;    ///< Number of encoded CSI part 1 bits
-  uint32_t             G_csi2;    ///< Number of encoded CSI part 2 bits
-  uint32_t             G_ulsch;   ///< Number of encoded shared channel
+  uint32_t               max_prb;                         ///< Maximum number of allocated prb
+  uint32_t               max_layers;                      ///< Maximum number of allocated layers
+  uint32_t               max_cw;                          ///< Maximum number of allocated code words
+  srsran_carrier_nr_t    carrier;                         ///< NR carrier configuration
+  srsran_sch_nr_t        sch;                             ///< SCH Encoder/Decoder Object
+  srsran_uci_nr_t        uci;                             ///< UCI Encoder/Decoder Object
+  uint8_t*               b[SRSRAN_MAX_CODEWORDS];         ///< SCH Encoded and scrambled data
+  cf_t*                  d[SRSRAN_MAX_CODEWORDS];         ///< PDSCH modulated bits
+  cf_t*                  x[SRSRAN_MAX_LAYERS_NR];         ///< PDSCH modulated bits
+  srsran_modem_table_t   modem_tables[SRSRAN_MOD_NITEMS]; ///< Modulator tables
+  srsran_evm_buffer_t*   evm_buffer;
+  bool                   meas_time_en;
+  uint32_t               meas_time_us;
+  srsran_re_pattern_t    dmrs_re_pattern;
+  srsran_dft_precoding_t dft_precoding; ///< DFT precoding object for transform precoding (RX)
+  uint8_t*               g_ulsch;       ///< Temporal Encoded UL-SCH data
+  uint8_t*               g_ack;         ///< Temporal Encoded HARQ-ACK bits
+  uint8_t*               g_csi1;        ///< Temporal Encoded CSI part 1 bits
+  uint8_t*               g_csi2;        ///< Temporal Encoded CSI part 2 bits
+  uint32_t*              pos_ulsch;     ///< Reserved resource elements for HARQ-ACK multiplexing position
+  uint32_t*              pos_ack;       ///< Reserved resource elements for HARQ-ACK multiplexing position
+  uint32_t*              pos_csi1;      ///< Reserved resource elements for CSI part 1 multiplexing position
+  uint32_t*              pos_csi2;      ///< Reserved resource elements for CSI part 1 multiplexing position
+  bool                   uci_mux;       ///< Set to true if PUSCH needs to multiplex UCI
+  uint32_t               G_ack;         ///< Number of encoded HARQ-ACK bits
+  uint32_t               G_csi1;        ///< Number of encoded CSI part 1 bits
+  uint32_t               G_csi2;        ///< Number of encoded CSI part 2 bits
+  uint32_t               G_ulsch;       ///< Number of encoded shared channel
 } srsran_pusch_nr_t;
 
 /**
@@ -92,6 +94,8 @@ typedef struct {
   srsran_sch_tb_res_nr_t tb[SRSRAN_MAX_TB];         ///< SCH payload
   srsran_uci_value_nr_t  uci;                       ///< UCI payload
   float                  evm[SRSRAN_MAX_CODEWORDS]; ///< EVM measurement if configured through arguments
+  float                  delay_us;                  /// Delay information based on DMRS Estimation
+  float                  snr_dB;                    ///< SNR information based on DMRS Estimation
 } srsran_pusch_res_nr_t;
 
 SRSRAN_API int srsran_pusch_nr_init_gnb(srsran_pusch_nr_t* q, const srsran_pusch_nr_args_t* args);

@@ -80,7 +80,8 @@ public:
   uint32_t get_k1(slot_point pdsch_slot) const
   {
     if (phy().duplex.mode == SRSRAN_DUPLEX_MODE_TDD) {
-      return phy().harq_ack.dl_data_to_ul_ack[pdsch_slot.to_uint() % phy().duplex.tdd.pattern1.period_ms];
+      uint32_t period_slots = (uint32_t)(phy().duplex.tdd.pattern1.period_ms * (1U << phy().carrier.scs));
+      return phy().harq_ack.dl_data_to_ul_ack[pdsch_slot.to_uint() % period_slots];
     }
     return phy().harq_ack.dl_data_to_ul_ack[pdsch_slot.to_uint() % phy().harq_ack.nof_dl_data_to_ul_ack];
   }

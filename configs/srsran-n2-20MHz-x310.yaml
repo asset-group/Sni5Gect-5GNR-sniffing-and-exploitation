@@ -1,0 +1,84 @@
+cell:
+  band: 2 # Band number
+  nof_prb: 106 # Number of Physical Resource Blocks
+  scs_common: 15 # Subcarrier Spacing for common (kHz)
+  scs_ssb: 15 # Subcarrier Spacing for SSB (kHz)
+  ssb_period_ms: 10 # SSB periodicity in milliseconds
+  dl_arfcn: 396000 # Downlink ARFCN
+  ssb_arfcn: 394590 # SSB ARFCN
+
+source:
+  # source_type: uhd
+  # source_params: type=x300,master_clock_rate=184.32e6,sync=gpsdo,clock=gpsdo,sampling_rate=23.04e6
+  source_type: file
+  source_params: /root/records/srsran-n2-20MHz/Pixel-7-connection-1/output_ch_0.fc32,/root/records/srsran-n2-20MHz/Pixel-7-connection-1/output_ch_1.fc32
+enable_recorder: false # record the IQ samples to file
+pcap_folder: logs/
+expose_data: true
+
+rf:
+  sample_rate: 23.04e6
+  num_channels: 2
+  uplink_cfo: 0 # ç-0.00054 # Uplink Carrier Frequency Offset correction in Hz
+  downlink_cfo: 0 # Downlink Carrier Frequency Offset (CFO) in Hz
+  padding: 
+    front_padding: 1536 # Number of IQ samples to pad in front of each burst
+    back_padding: 1536 # Number of IQ samples to pad at the end of each burst
+  channels:
+    - rx_frequency: 1980e6
+      tx_frequency: 1980e6
+      rx_offset: 0
+      tx_offset: 0
+      rx_gain: 16
+      tx_gain: 0
+      enable: true
+    - rx_frequency: 1900e6
+      tx_frequency: 1900e6
+      rx_offset: 0
+      tx_offset: 0
+      rx_gain: 16
+      tx_gain: 0
+      enable: true
+
+
+workers:
+  pool_size: 24 # Worker pool size
+  n_ue_dl_worker: 4 # Number of UE downlink workers
+  n_ue_ul_worker: 4 # Number of UE uplink workers
+  n_gnb_dl_worker: 4 # Number of gNB downlink workers
+  n_gnb_ul_worker: 4 # Number of gNB uplink workers
+
+uetracker:
+  close_timeout: 5000 # ms: stop tracking if no messages received
+  parse_messages: true # Parse messages
+  num_ues: 10 # Number of UETrackers to pre-initialize
+  enable_gpu: false # GPU acceleration for decoding
+
+downlink_injector:
+  delay_n_slots: 3 # Number of slots to delay injecting the message
+  duplications: 10 # Number of duplications to send in each inject
+  tx_cfo_correction: 0 # Uplink CFO correction (Hz)
+  tx_advancement: 59 # Number of samples to send in advance 
+  ul_advancement: 407 # srsue give ta = 6 = 348 (bs internal delay), sdr_timing_test offset 59 (SDR tx delay)
+  pdsch_mcs: 3 # PDSCH MCS
+  pdsch_prbs: 24 # PDSCH PRBs
+
+
+log:
+  log_level: INFO
+  syncer: INFO
+  # worker: DEBUG
+  worker: INFO
+  bc_worker: DEBUG
+
+exploit: build/modules/lib_dummy_exploit.so # exploit module to use
+# exploit:  build/modules/lib_identity_request.so
+# exploit:  build/modules/lib_dg_authentication_request_sniffer.so
+# exploit:  build/modules/lib_dg_authentication_replay.so
+# exploit:  build/modules/lib_dg_registration_reject.so
+# exploit:  build/modules/lib_mac_sch_mtk_rlc_crash.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_3.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_4.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_6.so
+# exploit:  build/modules/lib_mac_sch_mtk_rrc_setup_crash_7.so
+# exploit:  build/modules/lib_plaintext_registration_accept.so

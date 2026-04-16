@@ -484,6 +484,9 @@ bool make_phy_tdd_cfg(const tdd_ul_dl_cfg_common_s& tdd_ul_dl_cfg_common,
     case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2:
       srsran_duplex_config_nr.tdd.pattern1.period_ms = 2;
       break;
+    case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5:
+      srsran_duplex_config_nr.tdd.pattern1.period_ms = 2.5f;
+      break;
     case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms5:
       srsran_duplex_config_nr.tdd.pattern1.period_ms = 5;
       break;
@@ -494,7 +497,6 @@ bool make_phy_tdd_cfg(const tdd_ul_dl_cfg_common_s& tdd_ul_dl_cfg_common,
     case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms1p25:
     case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms0p5:
     case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms0p625:
-    case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5:
     default:
       asn1::log_warning("Invalid option for dl_ul_tx_periodicity_opts %s",
                         tdd_ul_dl_cfg_common.pattern1.dl_ul_tx_periodicity.to_string());
@@ -513,6 +515,9 @@ bool make_phy_tdd_cfg(const tdd_ul_dl_cfg_common_s& tdd_ul_dl_cfg_common,
       case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2:
         srsran_duplex_config_nr.tdd.pattern2.period_ms = 2;
         break;
+      case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5:
+        srsran_duplex_config_nr.tdd.pattern2.period_ms = 2.5f;
+        break;
       case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms5:
         srsran_duplex_config_nr.tdd.pattern2.period_ms = 5;
         break;
@@ -523,7 +528,6 @@ bool make_phy_tdd_cfg(const tdd_ul_dl_cfg_common_s& tdd_ul_dl_cfg_common,
       case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms1p25:
       case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms0p5:
       case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms0p625:
-      case tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5:
       default:
         asn1::log_warning("Invalid option for pattern2 dl_ul_tx_periodicity_opts %s",
                           tdd_ul_dl_cfg_common.pattern2.dl_ul_tx_periodicity.to_string());
@@ -550,22 +554,25 @@ bool make_phy_tdd_cfg(const srsran_duplex_config_nr_t&      srsran_duplex_config
     return true;
   }
   tdd_ul_dl_cfg_common->ref_subcarrier_spacing.value = (asn1::rrc_nr::subcarrier_spacing_e::options)scs;
-
-  switch (srsran_duplex_config_nr.tdd.pattern1.period_ms) {
-    case 1:
+  uint32_t perid1_x10 = (uint32_t)(srsran_duplex_config_nr.tdd.pattern1.period_ms * 10 + 0.5f);
+  switch (perid1_x10) {
+    case 10:
       tdd_ul_dl_cfg_common->pattern1.dl_ul_tx_periodicity = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms1;
       break;
-    case 2:
+    case 20:
       tdd_ul_dl_cfg_common->pattern1.dl_ul_tx_periodicity = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2;
       break;
-    case 5:
+    case 25:
+      tdd_ul_dl_cfg_common->pattern1.dl_ul_tx_periodicity = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5;
+      break;
+    case 50:
       tdd_ul_dl_cfg_common->pattern1.dl_ul_tx_periodicity = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms5;
       break;
-    case 10:
+    case 100:
       tdd_ul_dl_cfg_common->pattern1.dl_ul_tx_periodicity = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms10;
       break;
     default:
-      asn1::log_warning("Invalid option for dl_ul_tx_periodicity_opts %d",
+      asn1::log_warning("Invalid option for dl_ul_tx_periodicity_opts %.1f",
                         srsran_duplex_config_nr.tdd.pattern1.period_ms);
       return false;
   }
@@ -579,21 +586,25 @@ bool make_phy_tdd_cfg(const srsran_duplex_config_nr_t&      srsran_duplex_config
   }
 
   tdd_ul_dl_cfg_common->pattern2_present = true;
-  switch (srsran_duplex_config_nr.tdd.pattern2.period_ms) {
-    case 1:
+  uint32_t perid2_x10                    = (uint32_t)(srsran_duplex_config_nr.tdd.pattern2.period_ms * 10 + 0.5f);
+  switch (perid2_x10) {
+    case 10:
       tdd_ul_dl_cfg_common->pattern2.dl_ul_tx_periodicity.value = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms1;
       break;
-    case 2:
+    case 20:
       tdd_ul_dl_cfg_common->pattern2.dl_ul_tx_periodicity.value = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2;
       break;
-    case 5:
+    case 25:
+      tdd_ul_dl_cfg_common->pattern2.dl_ul_tx_periodicity.value = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms2p5;
+      break;
+    case 50:
       tdd_ul_dl_cfg_common->pattern2.dl_ul_tx_periodicity.value = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms5;
       break;
-    case 10:
+    case 100:
       tdd_ul_dl_cfg_common->pattern2.dl_ul_tx_periodicity.value = tdd_ul_dl_pattern_s::dl_ul_tx_periodicity_opts::ms10;
       break;
     default:
-      asn1::log_warning("Invalid option for pattern2 dl_ul_tx_periodicity_opts %d",
+      asn1::log_warning("Invalid option for pattern2 dl_ul_tx_periodicity_opts %.1f",
                         srsran_duplex_config_nr.tdd.pattern2.period_ms);
       return false;
   }
@@ -667,6 +678,21 @@ bool make_phy_search_space_cfg(const search_space_s& search_space, srsran_search
   srsran_search_space.nof_candidates[2] = search_space.nrof_candidates.aggregation_level4.to_number();
   srsran_search_space.nof_candidates[3] = search_space.nrof_candidates.aggregation_level8.to_number();
   srsran_search_space.nof_candidates[4] = search_space.nrof_candidates.aggregation_level16.to_number();
+
+  // Parse monitoringSymbolsWithinSlot
+  if (search_space.monitoring_symbols_within_slot_present) {
+    uint64_t raw                                       = search_space.monitoring_symbols_within_slot.to_number();
+    srsran_search_space.monitoring_symbols_within_slot = 0;
+    for (uint32_t s = 0; s < 14; s++) {
+      if ((raw >> (13 - s)) & 1) {
+        srsran_search_space.monitoring_symbols_within_slot |= (1ULL << s);
+      }
+    }
+    srsran_search_space.monitoring_symbols_within_slot_present = true;
+  } else {
+    srsran_search_space.monitoring_symbols_within_slot         = 0;
+    srsran_search_space.monitoring_symbols_within_slot_present = false;
+  }
 
   if (not search_space.search_space_type_present) {
     asn1::log_warning("nrof_candidates option not present");
@@ -909,6 +935,10 @@ bool make_phy_coreset_cfg(const ctrl_res_set_s& ctrl_res_set, srsran_coreset_t* 
   for (uint32_t i = 0; i < SRSRAN_CORESET_FREQ_DOMAIN_RES_SIZE; i++) {
     srsran_coreset.freq_resources[i] = ctrl_res_set.freq_domain_res.get(SRSRAN_CORESET_FREQ_DOMAIN_RES_SIZE - 1 - i);
   }
+  if (ctrl_res_set.pdcch_dmrs_scrambling_id_present) {
+    srsran_coreset.dmrs_scrambling_id         = ctrl_res_set.pdcch_dmrs_scrambling_id;
+    srsran_coreset.dmrs_scrambling_id_present = true;
+  }
   *in_srsran_coreset = srsran_coreset;
   return true;
 }
@@ -968,7 +998,6 @@ bool make_phy_common_time_ra(const pusch_time_domain_res_alloc_s& pusch_time_dom
 bool make_phy_max_code_rate(const pucch_format_cfg_s& pucch_format_cfg, uint32_t* in_max_code_rate)
 {
   if (not pucch_format_cfg.max_code_rate_present) {
-    asn1::log_warning("max_code_rate option not present");
     return false;
   }
   *in_max_code_rate = pucch_format_cfg.max_code_rate.value;
@@ -1003,9 +1032,11 @@ bool make_phy_res_config(const pucch_res_s&          pucch_res,
       srsran_pucch_nr_resource.nof_prb          = pucch_res.format.format2().nrof_prbs;
       break;
     case pucch_res_s::format_c_::types_opts::format3:
-      srsran_pucch_nr_resource.format = SRSRAN_PUCCH_NR_FORMAT_3;
-      asn1::log_warning("SRSRAN_PUCCH_NR_FORMAT_3 conversion not supported");
-      return false;
+      srsran_pucch_nr_resource.format           = SRSRAN_PUCCH_NR_FORMAT_3;
+      srsran_pucch_nr_resource.nof_symbols      = pucch_res.format.format3().nrof_symbols;
+      srsran_pucch_nr_resource.start_symbol_idx = pucch_res.format.format3().start_symbol_idx;
+      srsran_pucch_nr_resource.nof_prb          = pucch_res.format.format3().nrof_prbs;
+      break;
     case pucch_res_s::format_c_::types_opts::format4:
       srsran_pucch_nr_resource.format = SRSRAN_PUCCH_NR_FORMAT_4;
       asn1::log_warning("SRSRAN_PUCCH_NR_FORMAT_4 conversion not supported");
@@ -1044,7 +1075,10 @@ bool make_phy_res_config(const srsran_pucch_nr_resource_t& in_pucch_res,
       out_pucch_res.format.format2().nrof_prbs        = in_pucch_res.nof_prb;
       return true;
     case SRSRAN_PUCCH_NR_FORMAT_3:
-      asn1::log_warning("SRSRAN_PUCCH_NR_FORMAT_3 conversion not supported");
+      out_pucch_res.format.set_format3();
+      out_pucch_res.format.format3().nrof_symbols     = in_pucch_res.nof_symbols;
+      out_pucch_res.format.format3().start_symbol_idx = in_pucch_res.start_symbol_idx;
+      out_pucch_res.format.format3().nrof_prbs        = in_pucch_res.nof_prb;
       return true;
     case SRSRAN_PUCCH_NR_FORMAT_4:
       asn1::log_warning("SRSRAN_PUCCH_NR_FORMAT_4 conversion not supported");
@@ -1193,8 +1227,8 @@ bool make_phy_dmrs_dl_additional_pos(const dmrs_dl_cfg_s&       dmrs_dl_cfg,
       srsran_dmrs_sch_add_pos = srsran_dmrs_sch_add_pos_3;
       break;
     default:
-      asn1::log_warning("Invalid option for dmrs_add_position %s", dmrs_dl_cfg.dmrs_add_position.to_string());
-      return false;
+      srsran_dmrs_sch_add_pos = srsran_dmrs_sch_add_pos_2;
+      break;
   }
   *in_srsran_dmrs_sch_add_pos = srsran_dmrs_sch_add_pos;
   return true;
@@ -1219,8 +1253,8 @@ bool make_phy_dmrs_ul_additional_pos(const dmrs_ul_cfg_s&       dmrs_ul_cfg,
       srsran_dmrs_sch_add_pos = srsran_dmrs_sch_add_pos_3;
       break;
     default:
-      asn1::log_warning("Invalid option for dmrs_add_position %s", dmrs_ul_cfg.dmrs_add_position.to_string());
-      return false;
+      srsran_dmrs_sch_add_pos = srsran_dmrs_sch_add_pos_2;
+      break;
   }
   *in_srsran_dmrs_sch_add_pos = srsran_dmrs_sch_add_pos;
   return true;
@@ -1301,6 +1335,11 @@ bool make_phy_zp_csi_rs_resource(const asn1::rrc_nr::zp_csi_rs_res_s& zp_csi_rs_
       break;
     case csi_rs_res_map_s::freq_domain_alloc_c_::types_opts::options::other:
       zp_csi_rs_resource.resource_mapping.row = srsran_csi_rs_resource_mapping_row_other;
+      for (uint32_t i = 0; i < zp_csi_rs_res.res_map.freq_domain_alloc.other().length(); i++) {
+        zp_csi_rs_resource.resource_mapping.frequency_domain_alloc[i] =
+            zp_csi_rs_res.res_map.freq_domain_alloc.other().get(
+                zp_csi_rs_res.res_map.freq_domain_alloc.other().length() - 1 - i);
+      }
       break;
     default:
       asn1::log_warning("Invalid option for freq_domain_alloc %s",
@@ -1309,6 +1348,9 @@ bool make_phy_zp_csi_rs_resource(const asn1::rrc_nr::zp_csi_rs_res_s& zp_csi_rs_
   }
   zp_csi_rs_resource.resource_mapping.nof_ports        = zp_csi_rs_res.res_map.nrof_ports.to_number();
   zp_csi_rs_resource.resource_mapping.first_symbol_idx = zp_csi_rs_res.res_map.first_ofdm_symbol_in_time_domain;
+  if (zp_csi_rs_res.res_map.first_ofdm_symbol_in_time_domain2_present) {
+    zp_csi_rs_resource.resource_mapping.first_symbol_idx2 = zp_csi_rs_res.res_map.first_ofdm_symbol_in_time_domain2;
+  }
 
   switch (zp_csi_rs_res.res_map.cdm_type) {
     case csi_rs_res_map_s::cdm_type_opts::options::no_cdm:
@@ -1466,6 +1508,11 @@ bool make_phy_nzp_csi_rs_resource(const asn1::rrc_nr::nzp_csi_rs_res_s& asn1_nzp
       break;
     case csi_rs_res_map_s::freq_domain_alloc_c_::types_opts::options::other:
       csi_rs_nzp_resource.resource_mapping.row = srsran_csi_rs_resource_mapping_row_other;
+      for (uint32_t i = 0; i < asn1_nzp_csi_rs_res.res_map.freq_domain_alloc.other().length(); i++) {
+        csi_rs_nzp_resource.resource_mapping.frequency_domain_alloc[i] =
+            asn1_nzp_csi_rs_res.res_map.freq_domain_alloc.other().get(
+                asn1_nzp_csi_rs_res.res_map.freq_domain_alloc.other().length() - 1 - i);
+      }
       break;
     default:
       asn1::log_warning("Invalid option for freq_domain_alloc %s",
@@ -1475,6 +1522,10 @@ bool make_phy_nzp_csi_rs_resource(const asn1::rrc_nr::nzp_csi_rs_res_s& asn1_nzp
 
   csi_rs_nzp_resource.resource_mapping.nof_ports        = asn1_nzp_csi_rs_res.res_map.nrof_ports.to_number();
   csi_rs_nzp_resource.resource_mapping.first_symbol_idx = asn1_nzp_csi_rs_res.res_map.first_ofdm_symbol_in_time_domain;
+  if (asn1_nzp_csi_rs_res.res_map.first_ofdm_symbol_in_time_domain2_present) {
+    csi_rs_nzp_resource.resource_mapping.first_symbol_idx2 =
+        asn1_nzp_csi_rs_res.res_map.first_ofdm_symbol_in_time_domain2;
+  }
 
   switch (asn1_nzp_csi_rs_res.res_map.cdm_type) {
     case csi_rs_res_map_s::cdm_type_opts::options::no_cdm:
@@ -1870,14 +1921,23 @@ bool make_pdsch_cfg_from_serv_cell(const asn1::rrc_nr::serving_cell_cfg_s& serv_
     // Configure NZP-CSI
     for (auto& nzp_set : setup.nzp_csi_rs_res_set_to_add_mod_list) {
       auto& uecfg_set    = sch_hl->nzp_csi_rs_sets[nzp_set.nzp_csi_res_set_id];
+      uecfg_set          = {};
       uecfg_set.trs_info = nzp_set.trs_info_present;
-      uecfg_set.count    = nzp_set.nzp_csi_rs_res.size();
-      uint32_t count     = 0;
       for (uint8_t nzp_rs_idx : nzp_set.nzp_csi_rs_res) {
-        auto& res = uecfg_set.data[count++];
-        if (not srsran::make_phy_nzp_csi_rs_resource(setup.nzp_csi_rs_res_to_add_mod_list[nzp_rs_idx], &res)) {
+        auto resource_it =
+            std::find_if(setup.nzp_csi_rs_res_to_add_mod_list.begin(),
+                         setup.nzp_csi_rs_res_to_add_mod_list.end(),
+                         [nzp_rs_idx](const auto& resource) { return resource.nzp_csi_rs_res_id == nzp_rs_idx; });
+        if (resource_it == setup.nzp_csi_rs_res_to_add_mod_list.end()) {
+          asn1::log_warning("NZP-CSI-RS resource id=%d not present in nzp_csi_rs_res_to_add_mod_list", nzp_rs_idx);
           return false;
         }
+
+        auto& res = uecfg_set.data[uecfg_set.count];
+        if (not srsran::make_phy_nzp_csi_rs_resource(*resource_it, &res)) {
+          return false;
+        }
+        uecfg_set.count++;
       }
     }
   }
@@ -1885,14 +1945,23 @@ bool make_pdsch_cfg_from_serv_cell(const asn1::rrc_nr::serving_cell_cfg_s& serv_
   if (serv_cell.init_dl_bwp.pdsch_cfg_present and serv_cell.init_dl_bwp.pdsch_cfg.is_setup()) {
     const auto& setup = serv_cell.init_dl_bwp.pdsch_cfg.setup();
     if (setup.p_zp_csi_rs_res_set_present) {
-      auto& setup_set               = setup.p_zp_csi_rs_res_set.setup();
-      sch_hl->p_zp_csi_rs_set.count = setup_set.zp_csi_rs_res_id_list.size();
+      auto& setup_set         = setup.p_zp_csi_rs_res_set.setup();
+      sch_hl->p_zp_csi_rs_set = {};
       for (uint8_t zp_res_id : setup_set.zp_csi_rs_res_id_list) {
-        const asn1::rrc_nr::zp_csi_rs_res_s& setup_res = setup.zp_csi_rs_res_to_add_mod_list[zp_res_id];
-        auto&                                res       = sch_hl->p_zp_csi_rs_set.data[zp_res_id];
-        if (not srsran::make_phy_zp_csi_rs_resource(setup_res, &res)) {
+        auto resource_it =
+            std::find_if(setup.zp_csi_rs_res_to_add_mod_list.begin(),
+                         setup.zp_csi_rs_res_to_add_mod_list.end(),
+                         [zp_res_id](const auto& resource) { return resource.zp_csi_rs_res_id == zp_res_id; });
+        if (resource_it == setup.zp_csi_rs_res_to_add_mod_list.end()) {
+          asn1::log_warning("ZP-CSI-RS resource id=%d not present in zp_csi_rs_res_to_add_mod_list", zp_res_id);
           return false;
         }
+
+        auto& res = sch_hl->p_zp_csi_rs_set.data[sch_hl->p_zp_csi_rs_set.count];
+        if (not srsran::make_phy_zp_csi_rs_resource(*resource_it, &res)) {
+          return false;
+        }
+        sch_hl->p_zp_csi_rs_set.count++;
       }
     }
   }
@@ -2118,6 +2187,9 @@ bool fill_phy_pusch_cfg_common(const asn1::rrc_nr::pusch_cfg_common_s& pusch_cfg
       asn1::log_warning("Warning while building common_time_ra structure");
       return false;
     }
+  }
+  if (pusch_cfg.group_hop_enabled_transform_precoding_present) {
+    pusch->enable_hopping = true;
   }
   return true;
 }

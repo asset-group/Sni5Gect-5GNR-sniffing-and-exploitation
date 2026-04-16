@@ -29,6 +29,14 @@ Scheduler::Scheduler(ShadowerConfig& config_, Source* source_, Syncer* syncer_, 
   wd_worker = new WDWorker(config.duplex_mode, config.worker_log_level);
   /* initialize thread pool */
   thread_pool = new ThreadPool(config.pool_size);
+  if (config.expose_data) {
+    ul_api = std::make_shared<APIs>();
+    if (!ul_api->init("ipc:///tmp/sni5gect-ul-api.zmq")) {
+      logger.error("Failed to initialize Uplink API");
+    } else {
+      logger.info("Initialized UL API at ipc:///tmp/sni5gect-ul-api.zmq");
+    }
+  }
   /* Initialize a list of UE trackers before start */
   pre_initialize_ue();
 }
@@ -45,6 +53,9 @@ void Scheduler::pre_initialize_ue()
       continue;
     }
     ue->on_deactivate = std::bind(&Scheduler::on_ue_deactivate, this);
+    if (config.expose_data) {
+      ue->set_ul_api(ul_api);
+    }
     ue_trackers.push_back(ue);
   }
 }
@@ -106,7 +117,7 @@ void Scheduler::handle_mib(srsran_mib_nr_t& mib_, uint32_t ncellid_)
 }
 
 /* handler to apply sib1 configuration to multiple workers */
-void Scheduler::handle_sib1(asn1::rrc_nr::sib1_s& sib1_)
+void Scheduler::handle_sib1(asn1::rrc_nr_r17::sib1_s& sib1_)
 {
   sib1 = std::move(sib1_);
   broadcast_worker->apply_config_from_sib1(sib1);
@@ -114,26 +125,6 @@ void Scheduler::handle_sib1(asn1::rrc_nr::sib1_s& sib1_)
     ue->apply_config_from_sib1(sib1);
   }
   logger.info(CYAN "SIB1 applied to all workers" RESET);
-
-  // Update cell status
-  asn1::rrc_nr::plmn_id_info_s& plmn = sib1.cell_access_related_info.plmn_id_list[0];
-  asn1::rrc_nr::mcc_l&          mcc  = plmn.plmn_id_list[0].mcc;
-  asn1::rrc_nr::mnc_l&          mnc  = plmn.plmn_id_list[0].mnc;
-
-  std::string mnc_str;
-  if (mnc.size() == 2)
-    mnc_str = fmt::format("{}{}", mnc[0], mnc[1]);
-  else
-    mnc_str = fmt::format("{}{}{}", mnc[0], mnc[1], mnc[2]);
-
-  syncer->tracer_status.send_string(fmt::format("{{\"CELL\": {}, \"TAC\": {}, \"MCC\": \"{}{}{}\", \"MNC\": \"{}\" }}",
-                                                syncer->ncellid,
-                                                plmn.tac.to_number(),
-                                                mcc[0],
-                                                mcc[1],
-                                                mcc[2],
-                                                mnc_str),
-                                    true);
 
   /* Track each RA-RNTI with an Broadcast Worker */
   std::vector<uint16_t> ra_rnti_list = get_ra_rnti_list(sib1, config);

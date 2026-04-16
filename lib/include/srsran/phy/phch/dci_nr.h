@@ -53,14 +53,18 @@ typedef struct SRSRAN_API {
 
   /// Common Formats 0_1 and 1_1
   uint32_t                   carrier_indicator_size; ///< Defined in TS 38.213 clause 10.1
-  srsran_harq_ack_codebook_t harq_ack_codebok;       ///< PDSCH HARQ-ACK codebook mode
-  uint32_t                   nof_rb_groups;          ///< For allocation type 0, defined in TS 38.214 clause 6.1.2.2.1
+  srsran_harq_ack_codebook_t harq_ack_codebook;      ///< PDSCH HARQ-ACK codebook mode
+  uint32_t                   nof_dl_rb_groups;       ///< For allocation type 0, defined in TS 38.214 clause 6.1.2.2.1
+  uint32_t                   nof_ul_rb_groups;       ///< For allocation type 0, defined in TS 38.214 clause 6.1.2.2.1
+
+  bool prb_dynamic_bundling;
 
   /// Format 0_1 specific configuration (for PUSCH only)
   uint32_t nof_ul_bwp;          ///< Number of UL BWPs excluding the initial UL BWP, mentioned in the TS as N_BWP_RRC
   uint32_t nof_ul_time_res;     ///< Number of dedicated PUSCH time domain resource assigment, set to 0 for default
   uint32_t nof_srs;             ///< Number of configured SRS resources
   uint32_t nof_ul_layers;       ///< Set to the maximum number of layers for PUSCH
+  uint32_t nof_srs_ports;       ///< Max nrofSRS-Ports across SRS resources (1, 2, or 4)
   uint32_t pusch_nof_cbg;       ///< determined by maxCodeBlockGroupsPerTransportBlock for PUSCH
   uint32_t report_trigger_size; ///< determined by reportTriggerSize
   bool     enable_transform_precoding;      ///< Set to true if PUSCH transform precoding is enabled
@@ -127,6 +131,7 @@ typedef struct SRSRAN_API {
   srsran_rnti_type_t         rnti_type;        ///< RNTI type
   srsran_dci_format_nr_t     format;           ///< DCI format
   uint16_t                   rnti;             ///< UE temporal RNTI
+  uint8_t                    start_symbol;     ///< Start symbol in the slot
 } srsran_dci_ctx_t;
 
 /**
@@ -147,10 +152,10 @@ typedef struct SRSRAN_API {
   // Common fields
   uint32_t freq_domain_assignment; ///< Frequency domain resource assignment
   uint32_t time_domain_assignment; ///< Time domain resource assignment
-  uint32_t vrb_to_prb_mapping;    ///< VRB-to-PRB mapping
-  uint32_t mcs;                   ///< Modulation and coding scheme
-  uint32_t rv;                    ///< Redundancy version
-  uint32_t reserved;              ///< Reserved bits
+  uint32_t vrb_to_prb_mapping;     ///< VRB-to-PRB mapping
+  uint32_t mcs;                    ///< Modulation and coding scheme
+  uint32_t rv;                     ///< Redundancy version
+  uint32_t reserved;               ///< Reserved bits
 
   // C-RNTI/TC-RNTI specific fields
   uint32_t ndi;            ///< New data indicator
@@ -208,10 +213,10 @@ typedef struct SRSRAN_API {
   // Common fields
   uint32_t freq_domain_assignment; ///< Frequency domain resource assignment
   uint32_t time_domain_assignment; ///< Time domain resource assignment
-  uint32_t freq_hopping_flag;     ///< Frequency hopping flag
-  uint32_t mcs;                   ///< Modulation and coding scheme
-  uint32_t rv;                    ///< Redundancy version
-  uint32_t reserved;              ///< Reserved bits
+  uint32_t freq_hopping_flag;      ///< Frequency hopping flag
+  uint32_t mcs;                    ///< Modulation and coding scheme
+  uint32_t rv;                     ///< Redundancy version
+  uint32_t reserved;               ///< Reserved bits
 
   // C-RNTI or CS-RNTI or MCS-C-RNTI
   uint32_t ndi; ///< New data indicator

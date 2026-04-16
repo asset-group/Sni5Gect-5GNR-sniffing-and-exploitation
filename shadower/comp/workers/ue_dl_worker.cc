@@ -279,52 +279,127 @@ void UEDLWorker::handle_pdsch(srsran_slot_cfg_t& slot_cfg)
 /* */
 void UEDLWorker::handle_dlsch(uint8_t* sdu, uint32_t len)
 {
-  uint8_t* rrc_data = sdu;
-  uint32_t rrc_len  = len;
+  if (sdu == nullptr || len < 2) {
+    logger.error("Invalid DL-SCH SDU");
+    return;
+  }
+
   /* Decode the raw bytes into DL-SCH */
-  if (*sdu & 0x80) {
-    if (*sdu & 0x30) {
-      logger.info("Skipping segmented DL-SCH");
-      return;
-    }
-    /* AM data */
-    rrc_data += 2; /* AM header */
-    rrc_data += 2; /* PDCP header */
-    rrc_len -= 4;
-  } else {
+  if ((*sdu >> 4 & 0b1000) == 0) {
     /* ACK SN */
     return;
   }
+  uint8_t* am_data = sdu + 2;
+  uint32_t am_len  = len - 2;
+  // Keep reassembled bytes alive across the full function when handling segmented SDUs.
+  std::vector<uint8_t> reassembled_am_data;
+  // Data PDU
+  uint32_t sequence_number = ((*sdu & 0b00001111) << 4) | (*(sdu + 1) & 0b11111111);
+  /* Handle segmentation */
+  if (*sdu >> 4 & 0b1) {
+    if (segments_map == nullptr) {
+      logger.error("Segments map is not initialized");
+      return;
+    }
+    // First segment
+    std::vector<uint8_t> segment;
+    segment.insert(segment.end(), am_data, am_data + am_len);
+    (*segments_map)[sequence_number] = std::vector<std::vector<uint8_t> >();
+    (*segments_map)[sequence_number].push_back(segment);
+    return;
+  } else if ((*sdu >> 4 & 0b11) == 0b11) {
+    if (segments_map == nullptr) {
+      logger.error("Segments map is not initialized");
+      return;
+    }
+    // Middle segment
+    uint16_t seg_offset = (*am_data << 8) | (*(am_data + 1));
+    am_data += 2;
+    am_len -= 2;
+    // If first segment not found
+    if (segments_map->find(sequence_number) == segments_map->end()) {
+      logger.error("Middle segment received but first segment not found for SN %d", sequence_number);
+      return;
+    }
+    std::vector<uint8_t> segment;
+    segment.insert(segment.end(), am_data, am_data + am_len);
+    (*segments_map)[sequence_number].push_back(segment);
+    return;
+  } else if (*sdu >> 4 & 0b10) {
+    if (segments_map == nullptr) {
+      logger.error("Segments map is not initialized");
+      return;
+    }
+    // Last segment
+    uint16_t seg_offset = (*am_data << 8) | (*(am_data + 1));
+    am_data += 2;
+    am_len -= 2;
+    // If last segment not found
+    if (segments_map->find(sequence_number) == segments_map->end()) {
+      logger.error("Last segment received but first segment not found for SN %d", sequence_number);
+      return;
+    }
+    reassembled_am_data.reserve(4096); // pre-allocate 4KB
+    for (auto& seg : (*segments_map)[sequence_number]) {
+      reassembled_am_data.insert(reassembled_am_data.end(), seg.begin(), seg.end());
+    }
+    if (seg_offset != reassembled_am_data.size()) {
+      logger.error("Segment offset larger than current segment size for SN %d possibly missing a segment",
+                   sequence_number);
+      segments_map->erase(sequence_number);
+      return;
+    }
+    reassembled_am_data.insert(reassembled_am_data.end(), am_data, am_data + am_len);
+    am_data = reassembled_am_data.data();
+    am_len  = static_cast<uint32_t>(reassembled_am_data.size());
+    if (logger.debug.enabled()) {
+      std::ostringstream ss;
+      for (uint32_t i = 0; i < am_len; i++) {
+        ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(am_data[i]);
+      }
+      logger.debug("Complete SN %d: %s", sequence_number, ss.str().c_str());
+    }
+    segments_map->erase(sequence_number);
+  }
 
-  /* Decode message into RRC DL_DCCH_msg*/
-  asn1::rrc_nr::dl_dcch_msg_s dl_dcch_msg;
-  asn1::cbit_ref              bref(rrc_data, rrc_len);
-  asn1::SRSASN_CODE           err = dl_dcch_msg.unpack(bref);
-  if (err != asn1::SRSASN_SUCCESS) {
-    logger.error("Error unpacking DL-DCCH message");
+  if (am_len < 2) {
+    logger.error("Invalid AM data length %u", am_len);
     return;
   }
 
-  if (dl_dcch_msg.msg.type().value != asn1::rrc_nr::dl_dcch_msg_type_c::types_opts::c1) {
+  /* AM data */
+  uint8_t* rrc_data = am_data + 2; /* PDCP header */
+  uint32_t rrc_len  = am_len - 2;
+
+  /* Decode message into RRC DL_DCCH_msg*/
+  asn1::rrc_nr_r17::dl_dcch_msg_s dl_dcch_msg;
+  if (!parse_to_dl_dcch_msg(rrc_data, rrc_len, dl_dcch_msg)) {
+    return;
+  }
+
+  if (dl_dcch_msg.msg.type().value != asn1::rrc_nr_r17::dl_dcch_msg_type_c::types_opts::c1) {
     logger.error("Expected RRC message");
     return;
   }
 
   switch (dl_dcch_msg.msg.c1().type().value) {
-    case asn1::rrc_nr::dl_dcch_msg_type_c::c1_c_::types::rrc_recfg: {
-      asn1::rrc_nr::cell_group_cfg_s cell_group_cfg;
-      asn1::rrc_nr::rrc_recfg_s&     rrc_recfg = dl_dcch_msg.msg.c1().rrc_recfg();
-      asn1::cbit_ref                 bref_cg(rrc_recfg.crit_exts.rrc_recfg().non_crit_ext.master_cell_group.data(),
-                             rrc_recfg.crit_exts.rrc_recfg().non_crit_ext.master_cell_group.size());
-      if (cell_group_cfg.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
-        logger.error("Could not unpack master cell group config");
+    case asn1::rrc_nr_r17::dl_dcch_msg_type_c::c1_c_::types::rrc_recfg: {
+      asn1::rrc_nr_r17::rrc_recfg_s&     rrc_recfg = dl_dcch_msg.msg.c1().rrc_recfg();
+      asn1::rrc_nr_r17::cell_group_cfg_s cell_group_cfg;
+      if (!extract_cell_group_cfg(rrc_recfg, cell_group_cfg)) {
+        logger.error("Failed to extract cell group config from RRC reconfiguration");
         return;
+      }
+      if (logger.debug.enabled()) {
+        asn1::json_writer json_writer;
+        cell_group_cfg.to_json(json_writer);
+        logger.debug("Cell group config: %s", json_writer.to_string().c_str());
       }
       apply_cell_group_cfg(cell_group_cfg);
       break;
     }
 
-    case asn1::rrc_nr::dl_dcch_msg_type_c::c1_c_::types::rrc_release: {
+    case asn1::rrc_nr_r17::dl_dcch_msg_type_c::c1_c_::types::rrc_release: {
       logger.info("RRC Release received");
       deactivate();
       break;
@@ -339,7 +414,7 @@ void UEDLWorker::handle_dlsch(uint8_t* sdu, uint32_t len)
 void UEDLWorker::handle_dl_ccch(uint8_t* sdu, uint32_t len)
 {
   /* Decode the raw bytes into DL_CCCH*/
-  asn1::rrc_nr::dl_ccch_msg_s dl_ccch_msg;
+  asn1::rrc_nr_r17::dl_ccch_msg_s dl_ccch_msg;
   if (!parse_to_dl_ccch_msg(sdu, len, dl_ccch_msg)) {
     logger.error("Failed to parse DL-CCCH message");
     return;
@@ -349,12 +424,12 @@ void UEDLWorker::handle_dl_ccch(uint8_t* sdu, uint32_t len)
     dl_ccch_msg.msg.to_json(json_writer);
     logger.debug("CCCH message: %s", json_writer.to_string().c_str());
   }
-  if (dl_ccch_msg.msg.c1().type().value == asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_reject) {
+  if (dl_ccch_msg.msg.c1().type().value == asn1::rrc_nr_r17::dl_ccch_msg_type_c::c1_c_::types::rrc_reject) {
     logger.info(RED "RRC-Reject received" RESET);
     deactivate();
-  } else if (dl_ccch_msg.msg.c1().type().value == asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_setup) {
+  } else if (dl_ccch_msg.msg.c1().type().value == asn1::rrc_nr_r17::dl_ccch_msg_type_c::c1_c_::types::rrc_setup) {
     /* Decode the cell group data from rrc_setup message */
-    asn1::rrc_nr::cell_group_cfg_s cell_group;
+    asn1::rrc_nr_r17::cell_group_cfg_s cell_group;
     if (!extract_cell_group_cfg(dl_ccch_msg, cell_group)) {
       logger.error("Failed to extract cell group config");
       return;

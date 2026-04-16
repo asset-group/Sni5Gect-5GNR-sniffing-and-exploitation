@@ -44,12 +44,32 @@ int main(int argc, char* argv[])
       break;
     case 5:
       sample_file = "shadower/test/data/singtel-n1-20MHz/rar.fc32";
-      slot_number = 18;
+      slot_number = 8;
       half        = 0;
       break;
     case 6:
       sample_file = "shadower/test/data/srsran-n5-10MHz/rar.fc32";
-      slot_number = 9;
+      slot_number = 6;
+      half        = 0;
+      break;
+    case 7:
+      sample_file = "shadower/test/data/oai-n78-40mhz-3427.5/rar.fc32";
+      slot_number = 12;
+      half        = 0;
+      break;
+    case 8:
+      sample_file = "shadower/test/data/cyberx-n78-40MHz/rar.fc32";
+      slot_number = 4;
+      half        = 1;
+      break;
+    case 9:
+      sample_file = "shadower/test/data/amarisoft-n78-20MHz/rar.fc32";
+      slot_number = 12;
+      half        = 1;
+      break;
+    case 10:
+      sample_file = "shadower/test/data/starhub-n1-20MHz/rar.fc32";
+      slot_number = 18;
       half        = 0;
       break;
     default:
@@ -95,7 +115,7 @@ int main(int argc, char* argv[])
   /* copy samples to ue_dl processing buffer */
   srsran_vec_cf_copy(buffer, samples.data() + half * args.slot_len, args.slot_len);
   /* Initialize slot cfg */
-  srsran_slot_cfg_t slot_cfg = {.idx = slot_number};
+  srsran_slot_cfg_t slot_cfg = {.idx = slot_number + half};
   /* run ue_dl estimate fft */
   srsran_ue_dl_nr_estimate_fft(&ue_dl, &slot_cfg);
 
@@ -149,6 +169,11 @@ int main(int argc, char* argv[])
     return -1;
   }
 
+  for (uint32_t i = 0; i < data->N_bytes; i++) {
+    printf("%02x", data->msg[i]);
+  }
+  printf("\n");
+
   /* Decode the message as mac_rar_pdu */
   srsran::mac_rar_pdu_nr rar_pdu;
   if (!rar_pdu.unpack(data->msg, data->N_bytes)) {
@@ -161,27 +186,31 @@ int main(int argc, char* argv[])
     logger.error("No subpdus in RAR");
     return -1;
   }
-  const srsran::mac_rar_subpdu_nr subpdu = rar_pdu.get_subpdu(0);
-  /* Extract the rnti */
-  uint16_t tc_rnti = subpdu.get_temp_crnti();
-  if (tc_rnti == SRSRAN_INVALID_RNTI) {
-    logger.error("Invalid RNTI in RAR");
-    return -1;
+  for (uint32_t i = 0; i < num_subpdus; i++) {
+    srsran::mac_rar_subpdu_nr subpdu = rar_pdu.get_subpdu(i);
+    if (subpdu.has_rapid()) {
+      /* Extract the rnti */
+      uint16_t tc_rnti = subpdu.get_temp_crnti();
+      if (tc_rnti == SRSRAN_INVALID_RNTI) {
+        logger.error("Invalid RNTI in RAR");
+        return -1;
+      }
+      logger.info("TC-RNTI: %u RA-RNTI: %u", tc_rnti, rnti);
+
+      /* Extract the time advance info */
+      uint32_t time_advance = subpdu.get_ta();
+      logger.info("Time advance: %u", time_advance);
+
+      uint32_t n_timing_advance = subpdu.get_ta() * 16 * 64 / (1 << config.scs_common) + phy_cfg.t_offset;
+      double   ta_time          = static_cast<double>(n_timing_advance) * Tc;
+      uint32_t ta_samples       = ta_time * config.sample_rate;
+      logger.info("Uplink sample offset: %u", ta_samples);
+
+      /* Extract the UL grant */
+      std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS> ul_grant = subpdu.get_ul_grant();
+      std::ofstream rar_ul_grant(args.rar_ul_grant_file, std::ios::binary);
+      rar_ul_grant.write(reinterpret_cast<char*>(ul_grant.data()), ul_grant.size());
+    }
   }
-  logger.info("TC-RNTI: %u RA-RNTI: %u", tc_rnti, rnti);
-
-  /* Extract the time advance info */
-  uint32_t time_advance = subpdu.get_ta();
-  logger.info("Time advance: %u", time_advance);
-
-  uint32_t n_timing_advance = subpdu.get_ta() * 16 * 64 / (1 << config.scs_common) + phy_cfg.t_offset;
-  double   ta_time          = static_cast<double>(n_timing_advance) * Tc;
-  uint32_t ta_samples       = ta_time * config.sample_rate;
-  logger.info("Uplink sample offset: %u", ta_samples);
-
-  /* Extract the UL grant */
-  std::array<uint8_t, srsran::mac_rar_subpdu_nr::UL_GRANT_NBITS> ul_grant = subpdu.get_ul_grant();
-  std::ofstream                                                  rar_ul_grant(args.rar_ul_grant_file, std::ios::binary);
-  rar_ul_grant.write(reinterpret_cast<char*>(ul_grant.data()), ul_grant.size());
   return 0;
 }

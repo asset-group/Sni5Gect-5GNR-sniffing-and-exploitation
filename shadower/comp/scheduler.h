@@ -1,5 +1,6 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
+#include "shadower/comp/apis/apis.h"
 #include "shadower/comp/sync/syncer.h"
 #include "shadower/comp/trace_samples/trace_samples.h"
 #include "shadower/comp/ue_tracker.h"
@@ -26,14 +27,15 @@ private:
   WDWorker*                        wd_worker        = nullptr;
   ThreadPool*                      thread_pool      = nullptr;
   std::shared_ptr<BroadCastWorker> broadcast_worker = nullptr;
+  std::shared_ptr<APIs>            ul_api           = nullptr;
   create_exploit_t                 create_exploit;
   SafeQueue<Task>                  task_queue;
   srsran::phy_cfg_nr_t             phy_cfg = {};
   std::atomic<bool>                running{true};
 
-  srsran_mib_nr_t      mib     = {};
-  asn1::rrc_nr::sib1_s sib1    = {};
-  uint32_t             ncellid = 0;
+  srsran_mib_nr_t          mib     = {};
+  asn1::rrc_nr_r17::sib1_s sib1    = {};
+  uint32_t                 ncellid = 0;
 
   std::vector<std::shared_ptr<BroadCastWorker> > broadcast_workers = {};
 
@@ -56,7 +58,7 @@ private:
   void handle_mib(srsran_mib_nr_t& mib_, uint32_t ncellid_);
 
   /* handler to apply sib1 configuration to multiple workers */
-  void handle_sib1(asn1::rrc_nr::sib1_s& sib1_);
+  void handle_sib1(asn1::rrc_nr_r17::sib1_s& sib1_);
 
   void on_ue_deactivate();
 

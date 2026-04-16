@@ -146,10 +146,12 @@ void GNBDLWorker::work_imp()
   }
   sdr_buffer[0] = tx_buffer;
   source->send(sdr_buffer, tx_buffer_len, gnb_dl_task.rx_time, gnb_dl_task.slot_idx);
-  logger.info("Send message to UE: RNTI %u Slot: %u Current Slot: %u",
+  logger.info("Send message to UE: RNTI %u Slot: %u Current Slot: %u, current_task_idx: %u, target_task_idx: %u",
               gnb_dl_task.rnti,
               gnb_dl_task.slot_idx,
-              gnb_dl_task.rx_tti);
+              gnb_dl_task.rx_tti,
+              gnb_dl_task.rx_task_idx,
+              gnb_dl_task.rx_task_idx + (gnb_dl_task.slot_idx - gnb_dl_task.rx_tti + 1) / slot_per_sf);
 }
 
 bool GNBDLWorker::send_pdsch()

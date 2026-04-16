@@ -1,4 +1,6 @@
 #include "shadower/utils/utils.h"
+#include "srsran/asn1/rrc_nr/cell_group_config.h"
+#include "srsran/asn1/rrc_nr/dl_ccch_msg.h"
 #include "srsran/mac/mac_sch_pdu_nr.h"
 #include "srsran/phy/phch/pbch_msg_nr.h"
 #include "srsran/phy/ue/ue_dl_nr.h"
@@ -43,14 +45,33 @@ int main(int argc, char* argv[])
       half        = 0;
       break;
     case 5:
-      sample_file = "/root/records/singtel_n1/sf_422_8442.fc32";
-      slot_number = 42;
+      sample_file = "shadower/test/data/singtel-n1-20MHz/rrc_setup.fc32";
+      slot_number = 5;
       half        = 0;
-      rnti        = 21758;
       break;
     case 6:
       sample_file = "shadower/test/data/srsran-n5-10MHz/rrc_setup.fc32";
-      slot_number = 5;
+      slot_number = 18;
+      half        = 0;
+      break;
+    case 7:
+      sample_file = "shadower/test/data/oai-n78-40mhz-3427.5/rrc-setup.fc32";
+      slot_number = 4;
+      half        = 0;
+      break;
+    case 8:
+      sample_file = "shadower/test/data/cyberx-n78-40MHz/rrc-setup.fc32";
+      slot_number = 10;
+      half        = 0;
+      break;
+    case 9:
+      sample_file = "shadower/test/data/amarisoft-n78-20MHz/rrc-setup.fc32";
+      slot_number = 4;
+      half        = 1;
+      break;
+    case 10:
+      sample_file = "shadower/test/data/starhub-n1-20MHz/rrc-setup.fc32";
+      slot_number = 12;
       half        = 0;
       break;
     default:
@@ -167,7 +188,7 @@ int main(int argc, char* argv[])
       std::ofstream rrc_setup(args.rrc_setup_raw, std::ios::binary);
       rrc_setup.write((char*)subpdu.get_sdu(), subpdu.get_sdu_length());
       /* Decode the subpdu as dl_ccch_msg */
-      asn1::rrc_nr::dl_ccch_msg_s dl_ccch_msg;
+      asn1::rrc_nr_r17::dl_ccch_msg_s dl_ccch_msg;
       if (!parse_to_dl_ccch_msg(subpdu.get_sdu(), subpdu.get_sdu_length(), dl_ccch_msg)) {
         logger.error("Failed to parse DL-CCCH message");
         return -1;
@@ -176,10 +197,10 @@ int main(int argc, char* argv[])
       dl_ccch_msg.msg.to_json(json_writer);
       logger.debug("CCCH message: %s", json_writer.to_string().c_str());
       /* Extract the rrc_setup from dl_ccch_msg and extract cell group */
-      asn1::rrc_nr::rrc_setup_s&     rrc_setup_msg = dl_ccch_msg.msg.c1().rrc_setup();
-      asn1::cbit_ref                 bref_cg(rrc_setup_msg.crit_exts.rrc_setup().master_cell_group.data(),
-                             rrc_setup_msg.crit_exts.rrc_setup().master_cell_group.size());
-      asn1::rrc_nr::cell_group_cfg_s cell_group;
+      asn1::rrc_nr_r17::rrc_setup_s&     rrc_setup_msg = dl_ccch_msg.msg.c1().rrc_setup();
+      asn1::cbit_ref                     bref_cg(rrc_setup_msg.crit_exts.rrc_setup().master_cell_group.data(),
+                                                 rrc_setup_msg.crit_exts.rrc_setup().master_cell_group.size());
+      asn1::rrc_nr_r17::cell_group_cfg_s cell_group;
       if (cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
         logger.error("Failed to unpack master cell group config");
         return -1;

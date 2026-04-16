@@ -211,6 +211,17 @@ static void zc_sequence_nr_r_uv_arg_2prb(uint32_t u, cf_t* tmp_arg)
   srsran_vec_sc_prod_fcc(zc_sequence_nr_phi_M_sc_24[u], M_PI_4, tmp_arg, 2 * SRSRAN_NRE);
 }
 
+// TS 38.211 Table 5.2.2.2-5 for M_sc = 30 (2.5 PRB)
+// Uses N_ZC = 31 (smallest prime >= 30)
+// arg(n) = -pi * (u+1) * (n+1) * (n+2) / 31
+static void zc_sequence_nr_r_uv_arg_2dot5prb(uint32_t u, cf_t* tmp_arg)
+{
+  assert(u < NOF_ZC_SEQ);
+  for (uint32_t n = 0; n < 30; n++) {
+    tmp_arg[n] = -(float)M_PI * (float)(u + 1) * (float)(n + 1) * (float)(n + 2) / 31.0f;
+  }
+}
+
 static uint32_t zc_sequence_q(uint32_t u, uint32_t v, uint32_t N_sz)
 {
   float q;
@@ -266,6 +277,8 @@ static int zc_sequence_nr_r_uv_arg(uint32_t M_zc, uint32_t u, uint32_t v, cf_t* 
     zc_sequence_nr_r_uv_arg_1dot5prb(u, tmp_arg);
   } else if (M_zc == 24) {
     zc_sequence_nr_r_uv_arg_2prb(u, tmp_arg);
+  } else if (M_zc == 30) {
+    zc_sequence_nr_r_uv_arg_2dot5prb(u, tmp_arg);
   } else if (M_zc >= 36) {
     zc_sequence_r_uv_arg_mprb(M_zc, u, v, tmp_arg);
   } else {

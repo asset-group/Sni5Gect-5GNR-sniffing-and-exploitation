@@ -20,6 +20,7 @@ public:
     uint32_t                               rnti;
     srsran_rnti_type_t                     rnti_type;
     uint32_t                               rx_slot_idx;
+    uint32_t                               rx_task_idx;
     srsran_timestamp_t                     rx_timestamp;
     std::shared_ptr<std::vector<uint8_t> > msg;
   };
@@ -52,6 +53,7 @@ public:
                   std::shared_ptr<std::vector<uint8_t> >& pusch_payload,
                   srsran_sch_cfg_nr_t&                    pusch_cfg,
                   uint32_t                                rx_slot_idx,
+                  uint32_t                                rx_task_idx,
                   srsran_timestamp_t&                     rx_timestamp);
 
   cf_t* buffer = nullptr;
