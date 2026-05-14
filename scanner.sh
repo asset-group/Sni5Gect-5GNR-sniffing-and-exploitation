@@ -1,3 +1,1 @@
-# ./build/shadower/tools/scanner -s 23.04 -f 2675 -e 2685 -d uhd -b 41 -S 30 -r 200 -g 40 -d type=b200
-./build/shadower/tools/scanner -s 23.04 -f 2675 -e 2685 -d uhd -b 41 -S 15 -r 200 -g 40 -d type=b200
-# ./build/shadower/tools/scanner -s 23.04 -f 2670 -e 2690 -d uhd -b 7 -S 15 -r 200 -g 40 -d type=b200
+./build/shadower/tools/scanner -s 46.08 -f 2110 -e 2170 -d uhd -b 1 -S 15 -r 500 -g 37 -d type=x300,master_clock_rate=184.32e6,clock=gpsdo,sync=gpsdo | tee logs/cell-scan-band-1.log
