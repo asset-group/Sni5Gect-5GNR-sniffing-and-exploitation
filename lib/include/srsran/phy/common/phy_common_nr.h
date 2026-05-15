@@ -108,7 +108,7 @@ extern "C" {
  * @brief defines the maximum number of monitored PDCCH candidates per slot and per serving cell according to TS 38.213
  * Table 10.1-2
  */
-#define SRSRAN_MAX_NOF_CANDIDATES_SLOT_NR 44
+#define SRSRAN_MAX_NOF_CANDIDATES_SLOT_NR 512
 
 /**
  * @brief defines the maximum number of resource elements per PRB
@@ -209,6 +209,97 @@ extern "C" {
  * @brief Symbol index with extended CP
  */
 #define SRSRAN_EXT_CP_SYMBOL(SCS) (7U << (uint32_t)(SCS))
+
+typedef struct {
+  uint32_t mux_pattern;
+  uint32_t nof_prb;
+  uint32_t nof_symb;
+  uint32_t offset_rb; ///< Defined by TS 36.213 section 13 UE procedure for monitoring Type0-PDCCH CSS sets:
+  ///< Offset respect to the SCS of the CORESET for Type0-PDCCH CSS set, provided by
+  ///< subCarrierSpacingCommon, from the smallest RB index of the CORESET for Type0-PDCCH CSS set
+  ///< to the smallest RB index of the common RB overlapping with the first RB of the
+  ///< corresponding SS/PBCH block.
+} coreset_zero_entry_t;
+
+// TS38.213 Table 13-1. {SS/PBCH block, PDCCH} SCS is {15, 15} kHz and minimum channel bandwidth 5 MHz or 10 MHz.
+static const coreset_zero_entry_t coreset_zero_15_15[16] = {
+    {1, 24, 2, 0},
+    {1, 24, 2, 2},
+    {1, 24, 2, 4},
+    {1, 24, 3, 0},
+    {1, 24, 3, 2},
+    {1, 24, 3, 4},
+    {1, 48, 1, 12},
+    {1, 48, 1, 16},
+    {1, 48, 2, 12},
+    {1, 48, 2, 16},
+    {1, 48, 3, 12},
+    {1, 48, 3, 16},
+    {1, 96, 1, 38},
+    {1, 96, 2, 38},
+    {1, 96, 3, 38},
+    {},
+};
+
+// TS38.213 Table 13-2. {SS/PBCH block, PDCCH} SCS is {15, 30} kHz and minimum channel bandwidth 5 MHz or 10 MHz.
+static const coreset_zero_entry_t coreset_zero_15_30[16] = {
+    {1, 24, 2, 5},
+    {1, 24, 2, 6},
+    {1, 24, 2, 7},
+    {1, 24, 2, 8},
+    {1, 24, 3, 5},
+    {1, 24, 3, 6},
+    {1, 24, 3, 7},
+    {1, 24, 3, 8},
+    {1, 48, 1, 18},
+    {1, 48, 1, 20},
+    {1, 48, 2, 18},
+    {1, 48, 2, 20},
+    {1, 48, 3, 18},
+    {1, 48, 3, 20},
+    {},
+    {},
+};
+
+// TS38.213 Table 13-3. {SS/PBCH block, PDCCH} SCS is {30, 15} kHz and minimum channel bandwidth 5 MHz or 10 MHz.
+static const coreset_zero_entry_t coreset_zero_30_15[16] = {
+    {1, 48, 1, 2},
+    {1, 48, 1, 6},
+    {1, 48, 2, 2},
+    {1, 48, 2, 6},
+    {1, 48, 3, 2},
+    {1, 48, 3, 6},
+    {1, 96, 1, 28},
+    {1, 96, 2, 28},
+    {1, 96, 3, 28},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+};
+
+// TS38.213 Table 13-4. {SS/PBCH block, PDCCH} SCS is {30, 30} kHz and minimum channel bandwidth 5 MHz or 10 MHz.
+static const coreset_zero_entry_t coreset_zero_30_30[16] = {
+    {1, 24, 2, 0},
+    {1, 24, 2, 1},
+    {1, 24, 2, 2},
+    {1, 24, 2, 3},
+    {1, 24, 2, 4},
+    {1, 24, 3, 0},
+    {1, 24, 3, 1},
+    {1, 24, 3, 2},
+    {1, 24, 3, 3},
+    {1, 24, 3, 4},
+    {1, 48, 1, 12},
+    {1, 48, 1, 14},
+    {1, 48, 1, 16},
+    {1, 48, 2, 12},
+    {1, 48, 2, 14},
+    {1, 48, 2, 16},
+};
 
 typedef enum SRSRAN_API {
   srsran_coreset_mapping_type_non_interleaved = 0,
